@@ -1,15 +1,15 @@
 import { useState, useEffect } from 'react';
 import { tasksService } from '../services/tasks';
+import { TaskModal } from '../components/tasks/TaskModal';
 import type { Task } from '../types';
 
 export function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
-  const [isCreating, setIsCreating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  // Mock classId para pruebas - en producción vendría del contexto de autenticación
   const classId = 'default-class';
-  const orgId = 'default-org';
 
   useEffect(() => {
     loadTasks();
@@ -22,10 +22,57 @@ export function Tasks() {
       setTasks(response.tasks || []);
     } catch (error) {
       console.error('Error cargando tareas:', error);
-      // Por ahora, si hay error, mostramos array vacío
       setTasks([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreate = () => {
+    setSelectedTask(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (task: Task) => {
+    setSelectedTask(task);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (taskData: Partial<Task>) => {
+    try {
+      if (selectedTask) {
+        await tasksService.update({
+          classId,
+          taskId: selectedTask.id,
+          ...taskData,
+        });
+      } else {
+        await tasksService.create({
+          classId,
+          title: taskData.title!,
+          description: taskData.description!,
+          dueDate: taskData.dueDate!,
+          maxScore: taskData.maxScore || 100,
+          attachments: taskData.attachments || [],
+        });
+      }
+      setIsModalOpen(false);
+      loadTasks();
+    } catch (err) {
+      console.error('Error saving task:', err);
+      throw err;
+    }
+  };
+
+  const handleDelete = async (taskId: string) => {
+    if (!confirm('¿Está seguro de eliminar esta tarea?')) return;
+
+    try {
+      await tasksService.delete(classId, taskId);
+      loadTasks();
+    } catch (err) {
+      console.error('Error deleting task:', err);
+      alert('Error al eliminar tarea');
     }
   };
 
@@ -41,7 +88,7 @@ export function Tasks() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Tareas</h1>
-        <button onClick={() => setIsCreating(true)} className="btn btn-primary">
+        <button onClick={handleCreate} className="btn btn-primary">
           + Nueva Tarea
         </button>
       </div>
@@ -62,8 +109,12 @@ export function Tasks() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="text-primary-600 hover:text-primary-800 text-sm">Ver</button>
-                <button className="text-gray-600 hover:text-gray-800 text-sm">Entregar</button>
+                <button onClick={() => handleEdit(task)} className="text-primary-600 hover:text-primary-800 text-sm">
+                  Editar
+                </button>
+                <button onClick={() => handleDelete(task.id)} className="text-red-600 hover:text-red-800 text-sm">
+                  Eliminar
+                </button>
               </div>
             </div>
           </div>
@@ -76,17 +127,12 @@ export function Tasks() {
         </div>
       )}
 
-      {isCreating && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white p-6 rounded-lg max-w-md w-full">
-            <h2 className="text-xl font-bold mb-4">Nueva Tarea (Próximamente)</h2>
-            <p className="text-gray-600 mb-4">La funcionalidad de crear tareas estará disponible pronto.</p>
-            <button onClick={() => setIsCreating(false)} className="btn btn-secondary w-full">
-              Cerrar
-            </button>
-          </div>
-        </div>
-      )}
+      <TaskModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        task={selectedTask}
+      />
     </div>
   );
 }

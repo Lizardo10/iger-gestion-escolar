@@ -65,7 +65,7 @@ export interface Event {
   description: string;
   startDate: string;
   endDate: string;
-  type: 'academic' | 'social' | 'parent_meeting' | 'other';
+  type: 'meeting' | 'activity' | 'holiday';
   attendees: string[];
   location?: string;
   createdAt: string;

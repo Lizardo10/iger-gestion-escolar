@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
 import { eventsService } from '../services/events';
+import { EventModal } from '../components/events/EventModal';
 import type { Event } from '../types';
 
 export function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedView, setSelectedView] = useState<'list' | 'calendar'>('list');
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
   const orgId = 'default-org';
 
@@ -23,6 +26,54 @@ export function Events() {
       setEvents([]);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCreate = () => {
+    setSelectedEvent(null);
+    setIsModalOpen(true);
+  };
+
+  const handleEdit = (event: Event) => {
+    setSelectedEvent(event);
+    setIsModalOpen(true);
+  };
+
+  const handleSave = async (eventData: Partial<Event>) => {
+    try {
+      if (selectedEvent) {
+        await eventsService.update({
+          orgId,
+          eventId: selectedEvent.id,
+          ...eventData,
+        });
+      } else {
+        await eventsService.create({
+          orgId,
+          title: eventData.title!,
+          description: eventData.description!,
+          type: (eventData.type as 'meeting' | 'activity' | 'holiday') || 'meeting',
+          date: eventData.startDate || '',
+          location: eventData.location,
+        });
+      }
+      setIsModalOpen(false);
+      loadEvents();
+    } catch (err) {
+      console.error('Error saving event:', err);
+      throw err;
+    }
+  };
+
+  const handleDelete = async (eventId: string) => {
+    if (!confirm('¿Está seguro de eliminar este evento?')) return;
+
+    try {
+      await eventsService.delete(orgId, eventId);
+      loadEvents();
+    } catch (err) {
+      console.error('Error deleting event:', err);
+      alert('Error al eliminar evento');
     }
   };
 
@@ -76,7 +127,9 @@ export function Events() {
           >
             Calendario
           </button>
-          <button className="btn btn-primary">+ Nuevo Evento</button>
+          <button onClick={handleCreate} className="btn btn-primary">
+            + Nuevo Evento
+          </button>
         </div>
       </div>
 
@@ -99,8 +152,12 @@ export function Events() {
                   </div>
                 </div>
                 <div className="flex gap-2">
-                  <button className="text-primary-600 hover:text-primary-800 text-sm">Ver</button>
-                  <button className="text-gray-600 hover:text-gray-800 text-sm">Editar</button>
+                  <button onClick={() => handleEdit(event)} className="text-primary-600 hover:text-primary-800 text-sm">
+                    Editar
+                  </button>
+                  <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:text-red-800 text-sm">
+                    Eliminar
+                  </button>
                 </div>
               </div>
             </div>
@@ -122,6 +179,13 @@ export function Events() {
           <p className="text-gray-600">No hay eventos programados. ¡Crea tu primer evento!</p>
         </div>
       )}
+
+      <EventModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        onSave={handleSave}
+        event={selectedEvent}
+      />
     </div>
   );
 }
