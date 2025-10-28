@@ -1,0 +1,14 @@
+node_modules
+dist
+.serverless
+.env.local
+.env.dev
+.env.prod
+*.log
+.DS_Store
+coverage
+.vscode
+.idea
+
+
+

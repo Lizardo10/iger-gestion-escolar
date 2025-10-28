@@ -1,0 +1,18 @@
+{
+  "whyContinueWithGen1": "Prefer not to answer",
+  "projectName": "igerManagement",
+  "version": "3.1",
+  "frontend": "javascript",
+  "javascript": {
+    "framework": "none",
+    "config": {
+      "SourceDir": "frontend/src",
+      "DistributionDir": "frontend/dist",
+      "BuildCommand": "npm.cmd --prefix frontend run build",
+      "StartCommand": "npm.cmd --prefix frontend run dev"
+    }
+  },
+  "providers": [
+    "awscloudformation"
+  ]
+}

@@ -1,0 +1,336 @@
+service: iger-backend
+
+frameworkVersion: '4'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-east-1
+  stage: ${opt:stage, 'dev'}
+  environment:
+    DYNAMODB_TABLE: ${self:custom.tableName}
+    COGNITO_USER_POOL_ID: ${self:custom.cognitoUserPoolId}
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY, ''}
+    PAYPAL_CLIENT_ID: ${env:PAYPAL_CLIENT_ID, ''}
+    PAYPAL_SECRET: ${env:PAYPAL_SECRET, ''}
+    PAYPAL_MODE: sandbox
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:Query
+            - dynamodb:Scan
+            - dynamodb:GetItem
+            - dynamodb:PutItem
+            - dynamodb:UpdateItem
+            - dynamodb:DeleteItem
+          Resource:
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}"
+            - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.tableName}/index/*"
+        - Effect: Allow
+          Action:
+            - s3:GetObject
+            - s3:PutObject
+            - s3:DeleteObject
+          Resource:
+            - "arn:aws:s3:::iger-assets/*"
+        - Effect: Allow
+          Action:
+            - ssm:GetParameter
+          Resource:
+            - "arn:aws:ssm:${self:provider.region}:*:parameter/iger/*"
+
+custom:
+  tableName: IgerData
+  cognitoUserPoolId: us-east-1_gY5JpRMyV 
+  webpack:
+    webpackConfig: ./webpack.config.js
+    includeModules: true
+package:
+  individually: true
+  excludeDevDependencies: true
+functions:
+  authLogin:
+    handler: src/handlers/auth.login
+    events:
+      - http:
+          path: auth/login
+          method: post
+          cors: true
+  
+  authRegister:
+    handler: src/handlers/auth.register
+    events:
+      - http:
+          path: auth/register
+          method: post
+          cors: true
+  
+  getStudents:
+    handler: src/handlers/students.list
+    events:
+      - http:
+          path: students
+          method: get
+          cors: true
+  
+  getStudent:
+    handler: src/handlers/students.get
+    events:
+      - http:
+          path: students/{studentId}
+          method: get
+          cors: true
+  
+  createStudent:
+    handler: src/handlers/students.create
+    events:
+      - http:
+          path: students
+          method: post
+          cors: true
+  
+  updateStudent:
+    handler: src/handlers/students.update
+    events:
+      - http:
+          path: students/{studentId}
+          method: put
+          cors: true
+  
+  deleteStudent:
+    handler: src/handlers/students.remove
+    events:
+      - http:
+          path: students/{studentId}
+          method: delete
+          cors: true
+  
+  getTasks:
+    handler: src/handlers/tasks.list
+    events:
+      - http:
+          path: tasks
+          method: get
+          cors: true
+  
+  getTask:
+    handler: src/handlers/tasks.get
+    events:
+      - http:
+          path: classes/{classId}/tasks/{taskId}
+          method: get
+          cors: true
+  
+  createTask:
+    handler: src/handlers/tasks.create
+    events:
+      - http:
+          path: tasks
+          method: post
+          cors: true
+  
+  updateTask:
+    handler: src/handlers/tasks.update
+    events:
+      - http:
+          path: classes/{classId}/tasks/{taskId}
+          method: put
+          cors: true
+  
+  deleteTask:
+    handler: src/handlers/tasks.remove
+    events:
+      - http:
+          path: classes/{classId}/tasks/{taskId}
+          method: delete
+          cors: true
+  
+  createTaskSubmission:
+    handler: src/handlers/tasks.createSubmission
+    events:
+      - http:
+          path: tasks/{taskId}/submissions
+          method: post
+          cors: true
+  
+  getTaskSubmissions:
+    handler: src/handlers/tasks.getSubmissions
+    events:
+      - http:
+          path: tasks/{taskId}/submissions
+          method: get
+          cors: true
+  
+  getEvents:
+    handler: src/handlers/events.list
+    events:
+      - http:
+          path: events
+          method: get
+          cors: true
+  
+  getEvent:
+    handler: src/handlers/events.get
+    events:
+      - http:
+          path: events/{eventId}
+          method: get
+          cors: true
+  
+  createEvent:
+    handler: src/handlers/events.create
+    events:
+      - http:
+          path: events
+          method: post
+          cors: true
+  
+  updateEvent:
+    handler: src/handlers/events.update
+    events:
+      - http:
+          path: events/{eventId}
+          method: put
+          cors: true
+  
+  deleteEvent:
+    handler: src/handlers/events.remove
+    events:
+      - http:
+          path: events/{eventId}
+          method: delete
+          cors: true
+  
+  createInvoice:
+    handler: src/handlers/payments.createInvoice
+    events:
+      - http:
+          path: payments/invoices
+          method: post
+          cors: true
+  
+  createPayPalOrder:
+    handler: src/handlers/payments.createPayPalOrder
+    events:
+      - http:
+          path: payments/create-order
+          method: post
+          cors: true
+  
+  paypalWebhook:
+    handler: src/handlers/payments.handlePayPalWebhook
+    events:
+      - http:
+          path: payments/webhook
+          method: post
+          cors: true
+  
+  getInvoice:
+    handler: src/handlers/payments.getInvoice
+    events:
+      - http:
+          path: payments/invoices/{invoiceId}
+          method: get
+          cors: true
+  
+  registerAttendance:
+    handler: src/handlers/attendance.registerAttendance
+    events:
+      - http:
+          path: attendance
+          method: post
+          cors: true
+  
+  getAttendance:
+    handler: src/handlers/attendance.getAttendance
+    events:
+      - http:
+          path: attendance
+          method: get
+          cors: true
+  
+  getAttendanceReports:
+    handler: src/handlers/attendance.getAttendanceReports
+    events:
+      - http:
+          path: attendance/reports
+          method: get
+          cors: true
+  
+  syncPull:
+    handler: src/handlers/sync.pull
+    events:
+      - http:
+          path: sync/pull
+          method: post
+          cors: true
+  
+  syncPush:
+    handler: src/handlers/sync.push
+    events:
+      - http:
+          path: sync/push
+          method: post
+          cors: true
+  
+  aiSummarize:
+    handler: src/handlers/ai.summarize
+    events:
+      - http:
+          path: ai/summarize
+          method: post
+          cors: true
+  
+  aiTutor:
+    handler: src/handlers/ai.tutor
+    events:
+      - http:
+          path: ai/tutor
+          method: post
+          cors: true
+  
+  aiGenerateContent:
+    handler: src/handlers/ai.generateContent
+    events:
+      - http:
+          path: ai/generate-content
+          method: post
+          cors: true
+
+# plugins:
+  # - serverless-plugin-typescript
+  # - serverless-offline
+
+resources:
+  Resources:
+    IgerTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:custom.tableName}
+        BillingMode: PAY_PER_REQUEST
+        AttributeDefinitions:
+          - AttributeName: PK
+            AttributeType: S
+          - AttributeName: SK
+            AttributeType: S
+          - AttributeName: GSI1PK
+            AttributeType: S
+          - AttributeName: GSI1SK
+            AttributeType: S
+        KeySchema:
+          - AttributeName: PK
+            KeyType: HASH
+          - AttributeName: SK
+            KeyType: RANGE
+        GlobalSecondaryIndexes:
+          - IndexName: GSI1
+            KeySchema:
+              - AttributeName: GSI1PK
+                KeyType: HASH
+              - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+
