@@ -67,3 +67,5 @@ class TasksService {
 
 export const tasksService = new TasksService();
 
+// Force rebuild - 2025-10-29
+
