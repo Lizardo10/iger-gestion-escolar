@@ -45,7 +45,7 @@ class TasksService {
   }
 
   async get(classId: string, taskId: string) {
-    const response = await api.get<{ task: Task }>(`/tasks/${classId}/${taskId}`);
+    const response = await api.get<{ task: Task }>(`/classes/${classId}/tasks/${taskId}`);
     return response.data;
   }
 
@@ -55,12 +55,12 @@ class TasksService {
   }
 
   async update(params: UpdateTaskParams) {
-    const response = await api.put<Task>(`/tasks/${params.classId}/${params.taskId}`, params);
+    const response = await api.put<Task>(`/classes/${params.classId}/tasks/${params.taskId}`, params);
     return response.data;
   }
 
   async delete(classId: string, taskId: string) {
-    const response = await api.delete(`/tasks/${classId}/${taskId}`);
+    const response = await api.delete(`/classes/${classId}/tasks/${taskId}`);
     return response.data;
   }
 }

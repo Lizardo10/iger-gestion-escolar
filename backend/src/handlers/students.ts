@@ -132,8 +132,17 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function update(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const { studentId, orgId } = event.pathParameters || {};
+    const { studentId } = event.pathParameters || {};
+    const orgId = event.queryStringParameters?.orgId;
     const body = parseJsonBody(event.body) as Partial<Student>;
+
+    // Log para debug
+    console.log('Update student request:', {
+      pathParameters: event.pathParameters,
+      queryStringParameters: event.queryStringParameters,
+      body: body,
+      rawBody: event.body,
+    });
 
     if (!orgId || !studentId) {
       return errorResponse('orgId y studentId son requeridos', 400);
@@ -145,35 +154,25 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
       return errorResponse('Estudiante no encontrado', 404);
     }
 
-    const updateExpressions: string[] = [];
-    const expressionAttributeValues: Record<string, unknown> = {};
-    const expressionAttributeNames: Record<string, string> = {};
+    // Update the Data object with new values
+    const updatedData = {
+      ...existingItem.Data,
+      ...body,
+    };
 
-    Object.entries(body).forEach(([key, value]) => {
-      const attrName = `#${key}`;
-      const attrValue = `:${key}`;
+    const timestamp = getCurrentTimestamp();
 
-      updateExpressions.push(`${attrName} = ${attrValue}`);
-      expressionAttributeNames[attrName] = key;
-      expressionAttributeValues[attrValue] = value;
+    // Use putItem to replace the entire item with updated Data
+    await DynamoDBService.putItem({
+      PK: `ORG#${orgId}`,
+      SK: `STUDENT#${studentId}`,
+      GSI1PK: existingItem.GSI1PK,
+      GSI1SK: existingItem.GSI1SK,
+      Type: existingItem.Type,
+      Data: updatedData,
+      CreatedAt: existingItem.CreatedAt,
+      UpdatedAt: timestamp,
     });
-
-    if (updateExpressions.length > 0) {
-      updateExpressions.push('#UpdatedAt = :updatedAt');
-      expressionAttributeNames['#UpdatedAt'] = 'UpdatedAt';
-      expressionAttributeValues[':updatedAt'] = getCurrentTimestamp();
-
-      await DynamoDBService.updateItem({
-        Key: {
-          PK: `ORG#${orgId}`,
-          SK: `STUDENT#${studentId}`,
-        },
-        UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW',
-      });
-    }
 
     return successResponse({ message: 'Estudiante actualizado correctamente' });
   } catch (error) {
@@ -187,7 +186,8 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function remove(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const { studentId, orgId } = event.pathParameters || {};
+    const { studentId } = event.pathParameters || {};
+    const orgId = event.queryStringParameters?.orgId;
 
     if (!orgId || !studentId) {
       return errorResponse('orgId y studentId son requeridos', 400);

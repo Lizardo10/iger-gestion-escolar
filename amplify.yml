@@ -14,16 +14,28 @@ frontend:
     baseDirectory: frontend/dist
     files:
       - '**/*'
-  # Rewrite all routes to index.html for SPA
+  # Cache control headers
   customHeaders:
-    - pattern: /**
+    - pattern: '/assets/*'
       headers:
-        - key: 'cache-control'
+        - key: 'Cache-Control'
+          value: 'public, max-age=31536000, immutable'
+    - pattern: '/*.js'
+      headers:
+        - key: 'Cache-Control'
+          value: 'public, max-age=31536000, immutable'
+    - pattern: '/*.css'
+      headers:
+        - key: 'Cache-Control'
+          value: 'public, max-age=31536000, immutable'
+    - pattern: '/index.html'
+      headers:
+        - key: 'Cache-Control'
           value: 'no-cache'
   # https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html
   redirects:
     - source: '/<*>'
       target: '/index.html'
-      status: '200'
+      status: '200-404'
 
 

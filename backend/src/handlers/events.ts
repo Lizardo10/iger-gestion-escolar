@@ -85,11 +85,24 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
       orgId: string;
     };
 
-    const { orgId, title, description, startDate, endDate, type, attendees, location } = body;
+    // Log para debug
+    console.log('Create event request:', {
+      body: body,
+      rawBody: event.body,
+    });
 
-    if (!orgId || !title || !startDate || !endDate || !type) {
-      return errorResponse('Campos requeridos: orgId, title, startDate, endDate, type', 400);
+    const { orgId, title, description, startDate, endDate, date, type, attendees, location } = body;
+
+    // Log para debug
+    console.log('Event data after parsing:', { orgId, title, date, startDate, endDate, type });
+
+    if (!orgId || !title || !type) {
+      return errorResponse('Campos requeridos: orgId, title, type', 400);
     }
+
+    // Si viene 'date' (formato frontend), convertir a startDate/endDate
+    const finalStartDate = startDate || date;
+    const finalEndDate = endDate || date;
 
     const eventId = generateId();
     const timestamp = getCurrentTimestamp();
@@ -98,8 +111,8 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
       id: eventId,
       title,
       description: description || '',
-      startDate,
-      endDate,
+      startDate: finalStartDate,
+      endDate: finalEndDate,
       type: type as Event['type'],
       attendees: attendees || [],
       location: location || undefined,
@@ -136,7 +149,8 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function update(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const { eventId, orgId } = event.pathParameters || {};
+    const { eventId } = event.pathParameters || {};
+    const orgId = event.queryStringParameters?.orgId;
     const body = parseJsonBody(event.body) as Partial<Event>;
 
     if (!orgId || !eventId) {
@@ -149,35 +163,25 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
       return errorResponse('Evento no encontrado', 404);
     }
 
-    const updateExpressions: string[] = [];
-    const expressionAttributeValues: Record<string, unknown> = {};
-    const expressionAttributeNames: Record<string, string> = {};
+    // Update the Data object with new values
+    const updatedData = {
+      ...existingItem.Data,
+      ...body,
+    };
 
-    Object.entries(body).forEach(([key, value]) => {
-      const attrName = `#${key}`;
-      const attrValue = `:${key}`;
+    const timestamp = getCurrentTimestamp();
 
-      updateExpressions.push(`${attrName} = ${attrValue}`);
-      expressionAttributeNames[attrName] = key;
-      expressionAttributeValues[attrValue] = value;
+    // Use putItem to replace the entire item with updated Data
+    await DynamoDBService.putItem({
+      PK: `ORG#${orgId}`,
+      SK: `EVENT#${eventId}`,
+      GSI1PK: existingItem.GSI1PK,
+      GSI1SK: existingItem.GSI1SK,
+      Type: existingItem.Type,
+      Data: updatedData,
+      CreatedAt: existingItem.CreatedAt,
+      UpdatedAt: timestamp,
     });
-
-    if (updateExpressions.length > 0) {
-      updateExpressions.push('#UpdatedAt = :updatedAt');
-      expressionAttributeNames['#UpdatedAt'] = 'UpdatedAt';
-      expressionAttributeValues[':updatedAt'] = getCurrentTimestamp();
-
-      await DynamoDBService.updateItem({
-        Key: {
-          PK: `ORG#${orgId}`,
-          SK: `EVENT#${eventId}`,
-        },
-        UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW',
-      });
-    }
 
     return successResponse({ message: 'Evento actualizado correctamente' });
   } catch (error) {
@@ -191,7 +195,8 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function remove(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const { eventId, orgId } = event.pathParameters || {};
+    const { eventId } = event.pathParameters || {};
+    const orgId = event.queryStringParameters?.orgId;
 
     if (!orgId || !eventId) {
       return errorResponse('orgId y eventId son requeridos', 400);

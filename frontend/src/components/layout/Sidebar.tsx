@@ -7,6 +7,7 @@ export function Sidebar() {
     { path: '/tasks', label: 'Tareas', icon: '📝' },
     { path: '/events', label: 'Eventos', icon: '📅' },
     { path: '/payments', label: 'Pagos', icon: '💳' },
+    { path: '/attendance', label: 'Asistencia', icon: '✅' },
   ];
 
   return (

@@ -65,9 +65,11 @@ class StudentsService {
   }
 
   async update(params: UpdateStudentParams) {
+    // Extract orgId and studentId from params
+    const { orgId, studentId, ...updateData } = params;
     const response = await api.put<Student>(
-      `/students/${params.studentId}?orgId=${params.orgId}`,
-      params
+      `/students/${studentId}?orgId=${orgId}`,
+      updateData
     );
     return response.data;
   }

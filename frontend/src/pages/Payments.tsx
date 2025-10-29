@@ -1,27 +1,52 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { paymentsService } from '../services/payments';
+import type { Payment } from '../types';
 
-const MOCK_INVOICES = [
-  {
-    id: '1',
-    studentId: 'student-1',
-    amount: 50000,
-    status: 'pending' as const,
-    dueDate: '2024-01-31',
-    createdAt: '2024-01-01T00:00:00Z',
-  },
-  {
-    id: '2',
-    studentId: 'student-2',
-    amount: 50000,
-    status: 'paid' as const,
-    dueDate: '2024-01-31',
-    createdAt: '2024-01-01T00:00:00Z',
-    paidAt: '2024-01-15T14:30:00Z',
-  },
-];
+const MOCK_ORG_ID = 'org-1';
+const MOCK_STUDENT_ID = 'student-1';
 
 export function Payments() {
-  const [invoices] = useState(MOCK_INVOICES);
+  const [invoices, setInvoices] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    loadInvoices();
+  }, []);
+
+  const loadInvoices = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const data = await paymentsService.list({
+        orgId: MOCK_ORG_ID,
+      });
+      setInvoices(data.invoices || []);
+    } catch (err) {
+      console.error('Error loading invoices:', err);
+      setError('No se pudieron cargar las facturas');
+      // Por ahora, usa datos mock si hay error
+      setInvoices([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreateInvoice = () => {
+    alert('Funcionalidad de crear factura próximamente disponible');
+  };
+
+  const handlePay = async (invoice: Payment) => {
+    if (invoice.status !== 'pending') return;
+
+    try {
+      const result = await paymentsService.createPayPalOrder(MOCK_ORG_ID, invoice.id);
+      window.open(result.approvalUrl, '_blank');
+    } catch (err) {
+      console.error('Error creating PayPal order:', err);
+      alert('Error al procesar el pago');
+    }
+  };
 
   const formatCurrency = (amount: number) => {
     return new Intl.NumberFormat('es-CO', {
@@ -56,12 +81,28 @@ export function Payments() {
     }
   };
 
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-64">
+        <p className="text-gray-500">Cargando facturas...</p>
+      </div>
+    );
+  }
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Pagos</h1>
-        <button className="btn btn-primary">+ Nueva Factura</button>
+        <button onClick={handleCreateInvoice} className="btn btn-primary">
+          + Nueva Factura
+        </button>
       </div>
+
+      {error && (
+        <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm">
+          {error}
+        </div>
+      )}
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
         <div className="card">
@@ -112,7 +153,9 @@ export function Payments() {
                   <div className="flex gap-2 justify-end">
                     <button className="text-primary-600 hover:text-primary-800 text-sm">Ver</button>
                     {invoice.status === 'pending' && (
-                      <button className="text-green-600 hover:text-green-800 text-sm">Pagar</button>
+                      <button onClick={() => handlePay(invoice)} className="text-green-600 hover:text-green-800 text-sm">
+                        Pagar
+                      </button>
                     )}
                   </div>
                 </td>
@@ -122,9 +165,9 @@ export function Payments() {
         </table>
       </div>
 
-      {invoices.length === 0 && (
+      {invoices.length === 0 && !loading && (
         <div className="card text-center py-12">
-          <p className="text-gray-600">No hay facturas</p>
+          <p className="text-gray-600">No hay facturas. ¡Crea tu primera factura!</p>
         </div>
       )}
     </div>
