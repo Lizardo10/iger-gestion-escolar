@@ -1,5 +1,5 @@
 import type { LambdaEvent, LambdaResponse, Task } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
@@ -87,6 +87,14 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     if (!classId || !title || !description || !dueDate) {
       return errorResponse('Campos requeridos: classId, title, description, dueDate', 400);
     }
+
+    // Validaciones básicas
+    const tErr = validateString(title, 'title', 1, 120);
+    if (tErr) return errorResponse(tErr, 400);
+    const dErr = validateString(description, 'description', 1, 2000);
+    if (dErr) return errorResponse(dErr, 400);
+    const dateErr = validateISODate(dueDate, 'dueDate');
+    if (dateErr) return errorResponse(dateErr, 400);
 
     const taskId = generateId();
     const timestamp = getCurrentTimestamp();

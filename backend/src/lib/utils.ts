@@ -1,13 +1,26 @@
 import { LambdaResponse } from '../types';
 
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN || '*';
+
+function commonSecurityHeaders() {
+  return {
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'Referrer-Policy': 'no-referrer',
+    // CSP básica; ajustar si se requiere más permisiva
+    'Content-Security-Policy': "default-src 'self' * data: blob:; frame-ancestors 'none'",
+  } as Record<string, string>;
+}
+
 export function successResponse(data: unknown, statusCode = 200): LambdaResponse {
   return {
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      ...commonSecurityHeaders(),
     },
     body: JSON.stringify(data),
   };
@@ -18,9 +31,10 @@ export function errorResponse(message: string, statusCode = 500): LambdaResponse
     statusCode,
     headers: {
       'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
       'Access-Control-Allow-Methods': 'GET,POST,PUT,DELETE,OPTIONS',
       'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+      ...commonSecurityHeaders(),
     },
     body: JSON.stringify({
       error: message,
@@ -54,6 +68,20 @@ export function validateRequired(data: Record<string, unknown>, fields: string[]
       return `Campo requerido: ${field}`;
     }
   }
+  return null;
+}
+
+export function validateString(value: unknown, field: string, min = 1, max = 200): string | null {
+  if (typeof value !== 'string') return `Campo inválido: ${field}`;
+  const trimmed = value.trim();
+  if (trimmed.length < min || trimmed.length > max) return `Largo inválido para ${field}`;
+  return null;
+}
+
+export function validateISODate(value: unknown, field: string): string | null {
+  if (typeof value !== 'string') return `Campo inválido: ${field}`;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return `Fecha inválida en ${field}`;
   return null;
 }
 

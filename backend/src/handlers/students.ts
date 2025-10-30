@@ -1,5 +1,5 @@
 import type { LambdaEvent, LambdaResponse, Student } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
@@ -88,6 +88,14 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     if (!orgId || !firstName || !lastName || !birthDate || !grade) {
       return errorResponse('Campos requeridos: orgId, firstName, lastName, birthDate, grade', 400);
     }
+
+    // Validaciones básicas
+    const n1 = validateString(firstName, 'firstName', 1, 80);
+    if (n1) return errorResponse(n1, 400);
+    const n2 = validateString(lastName, 'lastName', 1, 120);
+    if (n2) return errorResponse(n2, 400);
+    const dErr = validateISODate(birthDate, 'birthDate');
+    if (dErr) return errorResponse(dErr, 400);
 
     const studentId = generateId();
     const timestamp = getCurrentTimestamp();

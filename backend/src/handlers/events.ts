@@ -1,5 +1,5 @@
 import type { LambdaEvent, LambdaResponse, Event } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
@@ -99,6 +99,13 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
       return errorResponse('Campos requeridos: orgId, title, type', 400);
     }
 
+    // Validaciones básicas
+    const titleErr = validateString(title, 'title', 1, 120);
+    if (titleErr) return errorResponse(titleErr, 400);
+    if (!['meeting', 'activity', 'holiday'].includes(String(type))) {
+      return errorResponse('type inválido', 400);
+    }
+
     // Si viene 'date' (formato frontend), convertir a startDate/endDate
     const finalStartDate = startDate || date;
     const finalEndDate = endDate || date;
@@ -106,6 +113,10 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     if (!finalStartDate || !finalEndDate) {
       return errorResponse('Se requiere "date" o ambos "startDate" y "endDate"', 400);
     }
+
+    const d1Err = validateISODate(finalStartDate, 'startDate');
+    const d2Err = validateISODate(finalEndDate, 'endDate');
+    if (d1Err || d2Err) return errorResponse(d1Err || d2Err!, 400);
 
     const eventId = generateId();
     const timestamp = getCurrentTimestamp();

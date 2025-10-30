@@ -14,6 +14,8 @@ provider:
     PAYPAL_CLIENT_ID: ${env:PAYPAL_CLIENT_ID, ''}
     PAYPAL_SECRET: ${env:PAYPAL_SECRET, ''}
     PAYPAL_MODE: sandbox
+    # Restringe CORS en respuestas; puedes sobreescribir por variable de entorno en deploy
+    ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, 'https://dev.d2umdnu9x2m9qg.amplifyapp.com'}
   iam:
     role:
       statements:
