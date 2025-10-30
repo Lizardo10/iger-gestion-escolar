@@ -122,6 +122,10 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     const d1Err = validateISODate(finalStartDate, 'startDate');
     const d2Err = validateISODate(finalEndDate, 'endDate');
     if (d1Err || d2Err) return errorResponse(d1Err || d2Err!, 400);
+    // Orden cronológico
+    if (new Date(finalEndDate) < new Date(finalStartDate)) {
+      return errorResponse('La fecha fin no puede ser anterior a inicio', 400);
+    }
 
     const eventId = generateId();
     const timestamp = getCurrentTimestamp();
