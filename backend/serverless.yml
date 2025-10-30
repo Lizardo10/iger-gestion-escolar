@@ -383,6 +383,30 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    AlertsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-alerts
+        DisplayName: Alertas Iger ${self:provider.stage}
+
+    AlertsTopicPolicy:
+      Type: AWS::SNS::TopicPolicy
+      Properties:
+        Topics:
+          - Ref: AlertsTopic
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: AllowCloudWatchPublish
+              Effect: Allow
+              Principal:
+                Service: cloudwatch.amazonaws.com
+              Action: SNS:Publish
+              Resource:
+                Fn::GetAtt:
+                  - AlertsTopic
+                  - TopicArn
+
     Api5xxAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
@@ -401,7 +425,8 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions: []
+        AlarmActions:
+          - Ref: AlertsTopic
 
     ApiLatencyP95Alarm:
       Type: AWS::CloudWatch::Alarm
@@ -421,7 +446,8 @@ resources:
         Threshold: 1000
         ComparisonOperator: GreaterThanThreshold
         TreatMissingData: notBreaching
-        AlarmActions: []
+        AlarmActions:
+          - Ref: AlertsTopic
 
     LambdaUpdateTaskErrorsAlarm:
       Type: AWS::CloudWatch::Alarm
@@ -439,7 +465,8 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions: []
+        AlarmActions:
+          - Ref: AlertsTopic
 
     LambdaCreateEventErrorsAlarm:
       Type: AWS::CloudWatch::Alarm
@@ -457,7 +484,8 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions: []
+        AlarmActions:
+          - Ref: AlertsTopic
 
     ApiGatewayUsagePlan:
       Type: AWS::ApiGateway::UsagePlan
