@@ -36,6 +36,13 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
     setError('');
 
     try {
+      // Validaciones del lado del cliente
+      if (!title.trim()) throw new Error('El título es requerido');
+      if (!description.trim()) throw new Error('La descripción es requerida');
+      if (!dueDate) throw new Error('La fecha límite es requerida');
+      const d = new Date(dueDate);
+      if (isNaN(d.getTime())) throw new Error('Fecha límite inválida');
+
       await onSave({
         title,
         description,

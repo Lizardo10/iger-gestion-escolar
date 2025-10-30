@@ -36,6 +36,14 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
     setError('');
 
     try {
+      // Validaciones del lado del cliente
+      if (!firstName.trim()) throw new Error('El nombre es requerido');
+      if (!lastName.trim()) throw new Error('El apellido es requerido');
+      if (!grade.trim()) throw new Error('El grado es requerido');
+      if (!birthDate) throw new Error('La fecha de nacimiento es requerida');
+      const d = new Date(birthDate);
+      if (isNaN(d.getTime())) throw new Error('Fecha de nacimiento inválida');
+
       await onSave({
         firstName,
         lastName,

@@ -41,6 +41,17 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
     setError('');
 
     try {
+      // Validaciones del lado del cliente
+      if (!title.trim()) throw new Error('El título es requerido');
+      if (!description.trim()) throw new Error('La descripción es requerida');
+      if (!startDate) throw new Error('La fecha inicio es requerida');
+      if (!endDate) throw new Error('La fecha fin es requerida');
+      const d1 = new Date(startDate);
+      const d2 = new Date(endDate);
+      if (isNaN(d1.getTime())) throw new Error('Fecha inicio inválida');
+      if (isNaN(d2.getTime())) throw new Error('Fecha fin inválida');
+      if (d2 < d1) throw new Error('La fecha fin no puede ser anterior a inicio');
+
       await onSave({
         title,
         description,
