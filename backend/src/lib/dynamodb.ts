@@ -79,6 +79,28 @@ export class DynamoDBService {
     return result.Items || [];
   }
 
+  static async queryPaginated(
+    indexName: string | undefined,
+    keyConditionExpression: string,
+    expressionAttributeValues: Record<string, unknown>,
+    limit?: number,
+    exclusiveStartKey?: Record<string, unknown>
+  ) {
+    const command = new QueryCommand({
+      TableName: TABLE_NAME,
+      IndexName: indexName,
+      KeyConditionExpression: keyConditionExpression,
+      ExpressionAttributeValues: expressionAttributeValues,
+      Limit: limit,
+      ExclusiveStartKey: exclusiveStartKey as any,
+    });
+    const result = await docClient.send(command);
+    return {
+      items: result.Items || [],
+      lastEvaluatedKey: result.LastEvaluatedKey,
+    };
+  }
+
   static async scan(filterExpression?: string, expressionAttributeValues?: Record<string, unknown>) {
     const params: Record<string, unknown> = {
       TableName: TABLE_NAME,

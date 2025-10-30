@@ -1,25 +1,27 @@
 import type { LambdaEvent, LambdaResponse, Student } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
     const { orgId } = event.queryStringParameters || {};
-    const page = parseInt(event.queryStringParameters?.page || '1', 10);
-    const limit = parseInt(event.queryStringParameters?.limit || '20', 10);
+    const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
+    const nextToken = event.queryStringParameters?.nextToken || null;
 
     if (!orgId) {
       return errorResponse('orgId es requerido', 400);
     }
 
-    // Query students by orgId
-    const items = await DynamoDBService.query(
+    // Query students by orgId (paginado)
+    const { items, lastEvaluatedKey } = await DynamoDBService.queryPaginated(
       undefined,
       'PK = :pk AND begins_with(SK, :skPrefix)',
       {
         ':pk': `ORG#${orgId}`,
         ':skPrefix': 'STUDENT#',
-      }
+      },
+      limit,
+      decodeNextToken(nextToken)
     );
 
     const students = items
@@ -29,14 +31,9 @@ export async function list(event: LambdaEvent): Promise<LambdaResponse> {
         id: item.SK.split('#')[1],
       }));
 
-    const total = students.length;
-    const offset = (page - 1) * limit;
-    const paginatedStudents = students.slice(offset, offset + limit);
-
     return successResponse({
-      students: paginatedStudents,
-      total,
-      page,
+      students,
+      nextToken: encodeNextToken(lastEvaluatedKey),
       limit,
     });
   } catch (error) {

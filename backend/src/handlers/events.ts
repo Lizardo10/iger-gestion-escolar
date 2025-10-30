@@ -1,22 +1,26 @@
 import type { LambdaEvent, LambdaResponse, Event } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
     const { orgId, from, to, type } = event.queryStringParameters || {};
+    const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
+    const nextToken = event.queryStringParameters?.nextToken || null;
 
     if (!orgId) {
       return errorResponse('orgId es requerido', 400);
     }
 
-    const items = await DynamoDBService.query(
+    const { items, lastEvaluatedKey } = await DynamoDBService.queryPaginated(
       undefined,
       'PK = :pk AND begins_with(SK, :skPrefix)',
       {
         ':pk': `ORG#${orgId}`,
         ':skPrefix': 'EVENT#',
-      }
+      },
+      limit,
+      decodeNextToken(nextToken)
     );
 
     let events = items.filter((item) => item.Type === 'Event').map((item) => ({
@@ -39,7 +43,8 @@ export async function list(event: LambdaEvent): Promise<LambdaResponse> {
 
     return successResponse({
       events,
-      total: events.length,
+      nextToken: encodeNextToken(lastEvaluatedKey),
+      limit,
     });
   } catch (error) {
     console.error('Error al listar eventos:', error);

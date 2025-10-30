@@ -1,24 +1,26 @@
 import type { LambdaEvent, LambdaResponse, Task } from '../types';
-import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate } from '../lib/utils';
+import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
     const { classId, orgId } = event.queryStringParameters || {};
-    const page = parseInt(event.queryStringParameters?.page || '1', 10);
-    const limit = parseInt(event.queryStringParameters?.limit || '20', 10);
+    const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
+    const nextToken = event.queryStringParameters?.nextToken || null;
 
     if (!classId) {
       return errorResponse('classId es requerido', 400);
     }
 
-    // Query tasks by classId
-    const items = await DynamoDBService.query(
+    // Query tasks by classId (paginado)
+    const { items, lastEvaluatedKey } = await DynamoDBService.queryPaginated(
       undefined,
       'PK = :pk',
       {
         ':pk': `CLASS#${classId}`,
-      }
+      },
+      limit,
+      decodeNextToken(nextToken)
     );
 
     const tasks = items
@@ -28,14 +30,9 @@ export async function list(event: LambdaEvent): Promise<LambdaResponse> {
         id: item.SK.split('#')[1],
       }));
 
-    const total = tasks.length;
-    const offset = (page - 1) * limit;
-    const paginatedTasks = tasks.slice(offset, offset + limit);
-
     return successResponse({
-      tasks: paginatedTasks,
-      total,
-      page,
+      tasks,
+      nextToken: encodeNextToken(lastEvaluatedKey),
       limit,
     });
   } catch (error) {

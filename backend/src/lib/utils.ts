@@ -85,5 +85,20 @@ export function validateISODate(value: unknown, field: string): string | null {
   return null;
 }
 
+export function encodeNextToken(key?: Record<string, unknown> | undefined): string | undefined {
+  if (!key) return undefined;
+  return Buffer.from(JSON.stringify(key)).toString('base64url');
+}
+
+export function decodeNextToken(token?: string | null): Record<string, unknown> | undefined {
+  if (!token) return undefined;
+  try {
+    const json = Buffer.from(token, 'base64url').toString('utf8');
+    return JSON.parse(json);
+  } catch {
+    return undefined;
+  }
+}
+
 
 
