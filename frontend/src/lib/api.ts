@@ -29,10 +29,16 @@ class ApiClient {
       }
     );
 
-    // Interceptor para manejar errores 401 (no autorizado)
+    // Interceptor para manejar errores y 401 (no autorizado)
     this.client.interceptors.response.use(
       (response) => response,
       async (error) => {
+        // Normalizar mensaje de error desde backend
+        const backendMsg = error.response?.data?.error || error.response?.data?.message;
+        if (backendMsg && typeof backendMsg === 'string') {
+          error.message = backendMsg;
+        }
+
         if (error.response?.status === 401) {
           // Token inválido o expirado, cerrar sesión
           await AuthService.logout();

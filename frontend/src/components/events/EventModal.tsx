@@ -16,6 +16,7 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
   const [type, setType] = useState<'meeting' | 'activity' | 'holiday'>('meeting');
   const [location, setLocation] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (event) {
@@ -37,6 +38,7 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       await onSave({
@@ -48,6 +50,9 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
         location,
       });
       onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar evento';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -61,6 +66,9 @@ export function EventModal({ isOpen, onClose, onSave, event }: EventModalProps) 
         <h2 className="text-2xl font-bold mb-4">{event ? 'Editar Evento' : 'Nuevo Evento'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+          )}
           <div>
             <label className="label">Título *</label>
             <input
