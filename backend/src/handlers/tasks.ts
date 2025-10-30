@@ -144,37 +144,29 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
       return errorResponse('Tarea no encontrada', 404);
     }
 
-    const updateExpressions: string[] = [];
-    const expressionAttributeValues: Record<string, unknown> = {};
-    const expressionAttributeNames: Record<string, string> = {};
+    const timestamp = getCurrentTimestamp();
 
-    Object.entries(body).forEach(([key, value]) => {
-      const attrName = `#${key}`;
-      const attrValue = `:${key}`;
+    // Fusionar datos existentes con los nuevos en Data
+    const currentData = existingItem.Data as Task;
+    const updatedData: Task = {
+      ...currentData,
+      ...body,
+      id: taskId,
+      classId: classId,
+    } as Task;
 
-      updateExpressions.push(`${attrName} = ${attrValue}`);
-      expressionAttributeNames[attrName] = key;
-      expressionAttributeValues[attrValue] = value;
+    await DynamoDBService.putItem({
+      PK: `CLASS#${classId}`,
+      SK: `TASK#${taskId}`,
+      GSI1PK: `DUEDATE#${updatedData.dueDate || currentData.dueDate}`,
+      GSI1SK: `TASK#${taskId}`,
+      Type: 'Task',
+      Data: updatedData,
+      CreatedAt: existingItem.CreatedAt,
+      UpdatedAt: timestamp,
     });
 
-    if (updateExpressions.length > 0) {
-      updateExpressions.push('#UpdatedAt = :updatedAt');
-      expressionAttributeNames['#UpdatedAt'] = 'UpdatedAt';
-      expressionAttributeValues[':updatedAt'] = getCurrentTimestamp();
-
-      await DynamoDBService.updateItem({
-        Key: {
-          PK: `CLASS#${classId}`,
-          SK: `TASK#${taskId}`,
-        },
-        UpdateExpression: `SET ${updateExpressions.join(', ')}`,
-        ExpressionAttributeNames: expressionAttributeNames,
-        ExpressionAttributeValues: expressionAttributeValues,
-        ReturnValues: 'ALL_NEW',
-      });
-    }
-
-    return successResponse({ message: 'Tarea actualizada correctamente' });
+    return successResponse({ message: 'Tarea actualizada correctamente', task: updatedData });
   } catch (error) {
     console.error('Error al actualizar tarea:', error);
     return errorResponse(
