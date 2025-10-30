@@ -104,6 +104,10 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     const finalStartDate = startDate || date;
     const finalEndDate = endDate || date;
 
+    if (!finalStartDate || !finalEndDate) {
+      return errorResponse('Se requiere "date" o ambos "startDate" y "endDate"', 400);
+    }
+
     const eventId = generateId();
     const timestamp = getCurrentTimestamp();
 
@@ -122,7 +126,7 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     await DynamoDBService.putItem({
       PK: `ORG#${orgId}`,
       SK: `EVENT#${eventId}`,
-      GSI1PK: `DATE#${startDate}`,
+      GSI1PK: `DATE#${finalStartDate}`,
       GSI1SK: `EVENT#${eventId}`,
       Type: 'Event',
       Data: eventData,
