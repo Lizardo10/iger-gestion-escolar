@@ -376,11 +376,6 @@ resources:
             Projection:
               ProjectionType: ALL
 
-    AlertsTopic:
-      Type: AWS::SNS::Topic
-      Properties:
-        TopicName: ${self:service}-${self:provider.stage}-alerts
-
     Api5xxAlarm:
       Type: AWS::CloudWatch::Alarm
       Properties:
@@ -399,8 +394,7 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertsTopic
+        AlarmActions: []
 
     ApiLatencyP95Alarm:
       Type: AWS::CloudWatch::Alarm
@@ -420,8 +414,7 @@ resources:
         Threshold: 1000
         ComparisonOperator: GreaterThanThreshold
         TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertsTopic
+        AlarmActions: []
 
     LambdaUpdateTaskErrorsAlarm:
       Type: AWS::CloudWatch::Alarm
@@ -439,8 +432,7 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertsTopic
+        AlarmActions: []
 
     LambdaCreateEventErrorsAlarm:
       Type: AWS::CloudWatch::Alarm
@@ -458,6 +450,5 @@ resources:
         Threshold: 1
         ComparisonOperator: GreaterThanOrEqualToThreshold
         TreatMissingData: notBreaching
-        AlarmActions:
-          - Ref: AlertsTopic
+        AlarmActions: []
 
