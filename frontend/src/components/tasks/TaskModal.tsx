@@ -14,6 +14,7 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const [dueDate, setDueDate] = useState('');
   const [maxScore, setMaxScore] = useState(100);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (task) {
@@ -32,6 +33,7 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       await onSave({
@@ -41,6 +43,9 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
         maxScore,
       });
       onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar tarea';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -54,6 +59,9 @@ export function TaskModal({ isOpen, onClose, onSave, task }: TaskModalProps) {
         <h2 className="text-2xl font-bold mb-4">{task ? 'Editar Tarea' : 'Nueva Tarea'}</h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+          )}
           <div>
             <label className="label">Título *</label>
             <input

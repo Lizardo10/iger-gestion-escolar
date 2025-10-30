@@ -14,6 +14,7 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
   const [birthDate, setBirthDate] = useState('');
   const [grade, setGrade] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (student) {
@@ -32,6 +33,7 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
+    setError('');
 
     try {
       await onSave({
@@ -41,6 +43,9 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
         grade,
       });
       onClose();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al guardar estudiante';
+      setError(msg);
     } finally {
       setIsLoading(false);
     }
@@ -56,6 +61,9 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
         </h2>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {error && (
+            <div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-sm">{error}</div>
+          )}
           <div>
             <label className="label">Nombre *</label>
             <input
