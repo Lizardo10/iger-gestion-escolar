@@ -1,0 +1,419 @@
+openapi: 3.0.3
+info:
+  title: Iger API
+  version: 0.1.0
+  description: API para gestión escolar (students, tasks, events) - baseline
+servers:
+  - url: https://unfepih103.execute-api.us-east-1.amazonaws.com/dev
+    description: Dev
+paths:
+  /students:
+    get:
+      summary: Listar estudiantes
+      parameters:
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: nextToken
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  students:
+                    type: array
+                    items: { $ref: '#/components/schemas/Student' }
+                  nextToken: { type: string, nullable: true }
+                  limit: { type: integer }
+    post:
+      summary: Crear estudiante
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentCreate'
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Student' }
+  /students/{studentId}:
+    get:
+      summary: Obtener estudiante
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  student: { $ref: '#/components/schemas/Student' }
+    put:
+      summary: Actualizar estudiante
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/StudentUpdate' }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar estudiante
+      parameters:
+        - in: path
+          name: studentId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /tasks:
+    get:
+      summary: Listar tareas
+      parameters:
+        - in: query
+          name: classId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: nextToken
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  tasks:
+                    type: array
+                    items: { $ref: '#/components/schemas/Task' }
+                  nextToken: { type: string, nullable: true }
+                  limit: { type: integer }
+    post:
+      summary: Crear tarea
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskCreate' }
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+
+  /classes/{classId}/tasks/{taskId}:
+    get:
+      summary: Obtener tarea
+      parameters:
+        - in: path
+          name: classId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  task: { $ref: '#/components/schemas/Task' }
+    put:
+      summary: Actualizar tarea
+      parameters:
+        - in: path
+          name: classId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/TaskUpdate' }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar tarea
+      parameters:
+        - in: path
+          name: classId
+          required: true
+          schema: { type: string }
+        - in: path
+          name: taskId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+  /events:
+    get:
+      summary: Listar eventos
+      parameters:
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: nextToken
+          schema: { type: string }
+        - in: query
+          name: from
+          schema: { type: string, format: date-time }
+        - in: query
+          name: to
+          schema: { type: string, format: date-time }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  events:
+                    type: array
+                    items: { $ref: '#/components/schemas/Event' }
+                  nextToken: { type: string, nullable: true }
+                  limit: { type: integer }
+    post:
+      summary: Crear evento
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventCreate' }
+      responses:
+        '201':
+          description: Creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Event' }
+  /events/{eventId}:
+    get:
+      summary: Obtener evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  event: { $ref: '#/components/schemas/Event' }
+    put:
+      summary: Actualizar evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/EventUpdate' }
+      responses:
+        '200': { description: OK }
+    delete:
+      summary: Eliminar evento
+      parameters:
+        - in: path
+          name: eventId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+      responses:
+        '200': { description: OK }
+
+components:
+  schemas:
+    Student:
+      type: object
+      properties:
+        id: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        birthDate: { type: string, format: date }
+        grade: { type: string }
+        parentIds:
+          type: array
+          items: { type: string }
+        orgId: { type: string }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+    StudentCreate:
+      type: object
+      required: [orgId, firstName, lastName, birthDate, grade]
+      properties:
+        orgId: { type: string }
+        firstName: { type: string }
+        lastName: { type: string }
+        birthDate: { type: string, format: date }
+        grade: { type: string }
+        parentIds:
+          type: array
+          items: { type: string }
+    StudentUpdate:
+      type: object
+      properties:
+        firstName: { type: string }
+        lastName: { type: string }
+        birthDate: { type: string, format: date }
+        grade: { type: string }
+        parentIds:
+          type: array
+          items: { type: string }
+
+    Task:
+      type: object
+      properties:
+        id: { type: string }
+        classId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        dueDate: { type: string, format: date }
+        attachments:
+          type: array
+          items: { type: string }
+        maxScore: { type: number }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+    TaskCreate:
+      type: object
+      required: [classId, title, description, dueDate]
+      properties:
+        classId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        dueDate: { type: string, format: date }
+        attachments:
+          type: array
+          items: { type: string }
+        maxScore: { type: number }
+    TaskUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        dueDate: { type: string, format: date }
+        attachments:
+          type: array
+          items: { type: string }
+        maxScore: { type: number }
+
+    Event:
+      type: object
+      properties:
+        id: { type: string }
+        title: { type: string }
+        description: { type: string }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        type:
+          type: string
+          enum: [meeting, activity, holiday]
+        attendees:
+          type: array
+          items: { type: string }
+        location: { type: string }
+        orgId: { type: string }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+    EventCreate:
+      type: object
+      required: [orgId, title, type]
+      properties:
+        orgId: { type: string }
+        title: { type: string }
+        description: { type: string }
+        type:
+          type: string
+          enum: [meeting, activity, holiday]
+        # Se acepta date o par startDate/endDate
+        date: { type: string, format: date-time }
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        attendees:
+          type: array
+          items: { type: string }
+        location: { type: string }
+    EventUpdate:
+      type: object
+      properties:
+        title: { type: string }
+        description: { type: string }
+        type:
+          type: string
+          enum: [meeting, activity, holiday]
+        startDate: { type: string, format: date-time }
+        endDate: { type: string, format: date-time }
+        location: { type: string }
