@@ -376,3 +376,88 @@ resources:
             Projection:
               ProjectionType: ALL
 
+    AlertsTopic:
+      Type: AWS::SNS::Topic
+      Properties:
+        TopicName: ${self:service}-${self:provider.stage}-alerts
+
+    Api5xxAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-apigw-5xx
+        AlarmDescription: API Gateway 5XX >= 1 en 5 minutos
+        Namespace: AWS/ApiGateway
+        MetricName: 5XXError
+        Dimensions:
+          - Name: ApiName
+            Value: ${self:service}-${self:provider.stage}
+          - Name: Stage
+            Value: ${self:provider.stage}
+        Period: 300
+        EvaluationPeriods: 1
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertsTopic
+
+    ApiLatencyP95Alarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-apigw-latency-p95
+        AlarmDescription: API Gateway Latency p95 > 1s
+        Namespace: AWS/ApiGateway
+        MetricName: Latency
+        Dimensions:
+          - Name: ApiName
+            Value: ${self:service}-${self:provider.stage}
+          - Name: Stage
+            Value: ${self:provider.stage}
+        Period: 300
+        EvaluationPeriods: 1
+        ExtendedStatistic: p95
+        Threshold: 1000
+        ComparisonOperator: GreaterThanThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertsTopic
+
+    LambdaUpdateTaskErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-lambda-updateTask-errors
+        AlarmDescription: Errores en Lambda updateTask
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: ${self:service}-${self:provider.stage}-updateTask
+        Period: 300
+        EvaluationPeriods: 1
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertsTopic
+
+    LambdaCreateEventErrorsAlarm:
+      Type: AWS::CloudWatch::Alarm
+      Properties:
+        AlarmName: ${self:service}-${self:provider.stage}-lambda-createEvent-errors
+        AlarmDescription: Errores en Lambda createEvent
+        Namespace: AWS/Lambda
+        MetricName: Errors
+        Dimensions:
+          - Name: FunctionName
+            Value: ${self:service}-${self:provider.stage}-createEvent
+        Period: 300
+        EvaluationPeriods: 1
+        Statistic: Sum
+        Threshold: 1
+        ComparisonOperator: GreaterThanOrEqualToThreshold
+        TreatMissingData: notBreaching
+        AlarmActions:
+          - Ref: AlertsTopic
+
