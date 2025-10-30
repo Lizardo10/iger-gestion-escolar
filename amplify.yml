@@ -1,4 +1,8 @@
 version: 1
+redirects:
+  - source: '/<*>'
+    target: '/index.html'
+    status: '200-404'
 frontend:
   phases:
     preBuild:
@@ -33,9 +37,4 @@ frontend:
         - key: 'Cache-Control'
           value: 'no-cache'
   # https://docs.aws.amazon.com/amplify/latest/userguide/redirects.html
-  redirects:
-    - source: '/<*>'
-      target: '/index.html'
-      status: '200-404'
-
-
+  
