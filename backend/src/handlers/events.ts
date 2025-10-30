@@ -110,7 +110,7 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     const eventId = generateId();
     const timestamp = getCurrentTimestamp();
 
-    const eventData: Event = {
+    const baseData: Event = {
       id: eventId,
       title,
       description: description || '',
@@ -118,9 +118,10 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
       endDate: finalEndDate,
       type: type as Event['type'],
       attendees: attendees || [],
-      location: location || undefined,
       orgId,
     };
+
+    const eventData: Event = location ? { ...baseData, location } : baseData;
 
     await DynamoDBService.putItem({
       PK: `ORG#${orgId}`,
