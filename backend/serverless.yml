@@ -459,3 +459,18 @@ resources:
         TreatMissingData: notBreaching
         AlarmActions: []
 
+    ApiGatewayUsagePlan:
+      Type: AWS::ApiGateway::UsagePlan
+      Properties:
+        UsagePlanName: ${self:service}-${self:provider.stage}-usage-plan
+        Throttle:
+          BurstLimit: 200
+          RateLimit: 100.0
+        Quota:
+          Limit: 10000
+          Period: DAY
+        ApiStages:
+          - ApiId:
+              Ref: ApiGatewayRestApi
+            Stage: ${self:provider.stage}
+
