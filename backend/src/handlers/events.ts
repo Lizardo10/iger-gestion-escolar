@@ -81,9 +81,7 @@ export async function get(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function create(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const body = parseJsonBody(event.body) as Partial<Event> & {
-      orgId: string;
-    };
+    const body = parseJsonBody(event.body) as Partial<Event> & { orgId?: string };
 
     // Log para debug
     console.log('Create event request:', {
@@ -91,7 +89,8 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
       rawBody: event.body,
     });
 
-    const { orgId, title, description, startDate, endDate, date, type, attendees, location } = body;
+    const orgId = body.orgId || event.queryStringParameters?.orgId;
+    const { title, description, startDate, endDate, date, type, attendees, location } = body;
 
     // Log para debug
     console.log('Event data after parsing:', { orgId, title, date, startDate, endDate, type });
