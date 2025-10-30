@@ -354,6 +354,11 @@ resources:
       Properties:
         TableName: ${self:custom.tableName}
         BillingMode: PAY_PER_REQUEST
+        PointInTimeRecoverySpecification:
+          PointInTimeRecoveryEnabled: true
+        TimeToLiveSpecification:
+          AttributeName: TTL
+          Enabled: true
         AttributeDefinitions:
           - AttributeName: PK
             AttributeType: S
