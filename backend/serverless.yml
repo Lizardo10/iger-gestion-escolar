@@ -121,7 +121,21 @@ functions:
       - http:
           path: classes/{classId}/tasks/{taskId}
           method: get
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
   
   createTask:
     handler: src/handlers/tasks.create
@@ -137,7 +151,21 @@ functions:
       - http:
           path: classes/{classId}/tasks/{taskId}
           method: put
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
   
   deleteTask:
     handler: src/handlers/tasks.remove
@@ -145,7 +173,21 @@ functions:
       - http:
           path: classes/{classId}/tasks/{taskId}
           method: delete
-          cors: true
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+              - X-Amz-Date
+              - X-Api-Key
+              - X-Amz-Security-Token
+            allowCredentials: false
+            methods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
   
   createTaskSubmission:
     handler: src/handlers/tasks.createSubmission
