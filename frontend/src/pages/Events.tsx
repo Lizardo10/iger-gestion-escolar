@@ -6,6 +6,7 @@ import type { Event } from '../types';
 export function Events() {
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nextToken, setNextToken] = useState<string | undefined>(undefined);
   const [selectedView, setSelectedView] = useState<'list' | 'calendar'>('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
@@ -13,17 +14,18 @@ export function Events() {
   const orgId = 'default-org';
 
   useEffect(() => {
-    loadEvents();
+    loadEvents(true);
   }, []);
 
-  const loadEvents = async () => {
+  const loadEvents = async (reset = false) => {
     try {
       setLoading(true);
-      const response = await eventsService.list({ orgId });
-      setEvents(response.events || []);
+      const response = await eventsService.list({ orgId, nextToken: reset ? undefined : nextToken });
+      setEvents((prev) => (reset ? (response.events || []) : [...prev, ...(response.events || [])]));
+      setNextToken(response.nextToken);
     } catch (error) {
       console.error('Error cargando eventos:', error);
-      setEvents([]);
+      if (reset) setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -162,6 +164,14 @@ export function Events() {
               </div>
             </div>
           ))}
+        </div>
+      )}
+
+      {selectedView === 'list' && nextToken && !loading && (
+        <div className="flex justify-center mt-4">
+          <button onClick={() => loadEvents(false)} className="btn btn-secondary">
+            Cargar más
+          </button>
         </div>
       )}
 

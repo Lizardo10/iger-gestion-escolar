@@ -3,8 +3,8 @@ import type { Event } from '../types';
 
 export interface ListEventsParams {
   orgId: string;
-  page?: number;
   limit?: number;
+  nextToken?: string;
   from?: string;
   to?: string;
 }
@@ -32,10 +32,12 @@ class EventsService {
   async list(params: ListEventsParams) {
     const queryParams = new URLSearchParams({
       orgId: params.orgId,
-      page: (params.page || 1).toString(),
       limit: (params.limit || 20).toString(),
     });
 
+    if (params.nextToken) {
+      queryParams.append('nextToken', params.nextToken);
+    }
     if (params.from) {
       queryParams.append('from', params.from);
     }
@@ -45,8 +47,7 @@ class EventsService {
 
     const response = await api.get<{
       events: Event[];
-      total: number;
-      page: number;
+      nextToken?: string;
       limit: number;
     }>(`/events?${queryParams.toString()}`);
 

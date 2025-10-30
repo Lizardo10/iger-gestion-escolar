@@ -11,26 +11,25 @@ export function Students() {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
-  const [page, setPage] = useState(1);
-  const [total, setTotal] = useState(0);
+  const [nextToken, setNextToken] = useState<string | undefined>(undefined);
   const limit = 20;
 
   useEffect(() => {
-    loadStudents();
-  }, [page]);
+    loadStudents(true);
+  }, []);
 
-  const loadStudents = async () => {
+  const loadStudents = async (reset = false) => {
     setIsLoading(true);
     setError('');
 
     try {
       const data = await studentsService.list({
         orgId: MOCK_ORG_ID,
-        page,
         limit,
+        nextToken: reset ? undefined : nextToken,
       });
-      setStudents(data.students);
-      setTotal(data.total);
+      setStudents((prev) => (reset ? data.students : [...prev, ...data.students]));
+      setNextToken(data.nextToken);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al cargar estudiantes');
       console.error('Error loading students:', err);
@@ -171,27 +170,11 @@ export function Students() {
               </table>
             </div>
 
-            {total > limit && (
-              <div className="flex justify-between items-center px-4 py-3 border-t">
-                <div className="text-sm text-gray-600">
-                  Mostrando {students.length} de {total} estudiantes
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => setPage(page - 1)}
-                    disabled={page === 1}
-                    className="btn btn-secondary text-sm"
-                  >
-                    Anterior
-                  </button>
-                  <button
-                    onClick={() => setPage(page + 1)}
-                    disabled={page * limit >= total}
-                    className="btn btn-secondary text-sm"
-                  >
-                    Siguiente
-                  </button>
-                </div>
+            {nextToken && (
+              <div className="flex justify-center px-4 py-3 border-t">
+                <button onClick={() => loadStudents(false)} className="btn btn-secondary text-sm">
+                  Cargar más
+                </button>
               </div>
             )}
           </>

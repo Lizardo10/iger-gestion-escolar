@@ -6,23 +6,25 @@ import type { Task } from '../types';
 export function Tasks() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [nextToken, setNextToken] = useState<string | undefined>(undefined);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
   const classId = 'default-class';
 
   useEffect(() => {
-    loadTasks();
+    loadTasks(true);
   }, []);
 
-  const loadTasks = async () => {
+  const loadTasks = async (reset = false) => {
     try {
       setLoading(true);
-      const response = await tasksService.list({ classId });
-      setTasks(response.tasks || []);
+      const response = await tasksService.list({ classId, nextToken: reset ? undefined : nextToken });
+      setTasks((prev) => (reset ? (response.tasks || []) : [...prev, ...(response.tasks || [])]));
+      setNextToken(response.nextToken);
     } catch (error) {
       console.error('Error cargando tareas:', error);
-      setTasks([]);
+      if (reset) setTasks([]);
     } finally {
       setLoading(false);
     }
@@ -120,6 +122,14 @@ export function Tasks() {
           </div>
         ))}
       </div>
+
+      {nextToken && !loading && (
+        <div className="flex justify-center mt-4">
+          <button onClick={() => loadTasks(false)} className="btn btn-secondary">
+            Cargar más
+          </button>
+        </div>
+      )}
 
       {tasks.length === 0 && !loading && (
         <div className="card text-center py-12">

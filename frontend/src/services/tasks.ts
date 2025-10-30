@@ -3,8 +3,8 @@ import type { Task } from '../types';
 
 export interface ListTasksParams {
   classId: string;
-  page?: number;
   limit?: number;
+  nextToken?: string;
 }
 
 export interface CreateTaskParams {
@@ -30,14 +30,16 @@ class TasksService {
   async list(params: ListTasksParams) {
     const queryParams = new URLSearchParams({
       classId: params.classId,
-      page: (params.page || 1).toString(),
       limit: (params.limit || 20).toString(),
     });
 
+    if (params.nextToken) {
+      queryParams.append('nextToken', params.nextToken);
+    }
+
     const response = await api.get<{
       tasks: Task[];
-      total: number;
-      page: number;
+      nextToken?: string;
       limit: number;
     }>(`/tasks?${queryParams.toString()}`);
 

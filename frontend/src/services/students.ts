@@ -3,8 +3,8 @@ import type { Student } from '../types';
 
 export interface ListStudentsParams {
   orgId: string;
-  page?: number;
   limit?: number;
+  nextToken?: string;
   grade?: string;
   active?: boolean;
 }
@@ -33,10 +33,12 @@ class StudentsService {
   async list(params: ListStudentsParams) {
     const queryParams = new URLSearchParams({
       orgId: params.orgId,
-      page: (params.page || 1).toString(),
       limit: (params.limit || 20).toString(),
     });
 
+    if (params.nextToken) {
+      queryParams.append('nextToken', params.nextToken);
+    }
     if (params.grade) {
       queryParams.append('grade', params.grade);
     }
@@ -46,8 +48,7 @@ class StudentsService {
 
     const response = await api.get<{
       students: Student[];
-      total: number;
-      page: number;
+      nextToken?: string;
       limit: number;
     }>(`/students?${queryParams.toString()}`);
 
