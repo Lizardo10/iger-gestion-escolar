@@ -13,9 +13,12 @@ export interface CreateEventParams {
   orgId: string;
   title: string;
   description: string;
-  date: string;
-  location?: string;
   type: 'meeting' | 'activity' | 'holiday';
+  // Permitir ambos formatos
+  date?: string;
+  startDate?: string;
+  endDate?: string;
+  location?: string;
 }
 
 export interface UpdateEventParams {
@@ -60,7 +63,15 @@ class EventsService {
   }
 
   async create(params: CreateEventParams) {
-    const response = await api.post<Event>('/events', params);
+    const payload: any = { ...params };
+    if (params.startDate && params.endDate) {
+      delete payload.date;
+    } else if (params.date) {
+      delete payload.startDate;
+      delete payload.endDate;
+    }
+    if (payload.location === '') delete payload.location;
+    const response = await api.post<Event>('/events', payload);
     return response.data;
   }
 

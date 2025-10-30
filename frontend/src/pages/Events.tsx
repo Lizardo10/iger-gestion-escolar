@@ -11,7 +11,7 @@ export function Events() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  const orgId = 'default-org';
+  const orgId = 'org-1';
 
   useEffect(() => {
     loadEvents(true);
@@ -55,7 +55,8 @@ export function Events() {
           title: eventData.title!,
           description: eventData.description!,
           type: (eventData.type as 'meeting' | 'activity' | 'holiday') || 'meeting',
-          date: eventData.startDate || '',
+          startDate: eventData.startDate!,
+          endDate: eventData.endDate!,
           location: eventData.location,
         });
       }
