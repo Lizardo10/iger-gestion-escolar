@@ -1,6 +1,14 @@
 # Configuración de Cognito para Auth
 
-## Obtener COGNITO_CLIENT_ID
+## ✅ Client ID Configurado
+
+**Client ID para el backend:** `55hal9q6ogn0orhutff3tbohsv`  
+**Client Name:** `iger-backend-client`  
+**Configuraciones habilitadas:**
+- ✅ ALLOW_USER_PASSWORD_AUTH
+- ✅ ALLOW_REFRESH_TOKEN_AUTH
+
+## Obtener COGNITO_CLIENT_ID (si necesitas verificar)
 
 Para que la autenticación funcione, necesitas obtener el **App Client ID** de tu User Pool de Cognito.
 
@@ -30,9 +38,16 @@ Esto mostrará todos los App Clients. Copia el `ClientId` del que quieras usar.
 
 ### Configurar como variable de entorno
 
-**Para desarrollo local:**
+**Client ID del backend:** `55hal9q6ogn0orhutff3tbohsv`
+
+**Para desarrollo local (Linux/Mac/Git Bash):**
 ```bash
-export COGNITO_CLIENT_ID="tu-client-id-aqui"
+export COGNITO_CLIENT_ID="55hal9q6ogn0orhutff3tbohsv"
+```
+
+**Para PowerShell (Windows):**
+```powershell
+$env:COGNITO_CLIENT_ID = "55hal9q6ogn0orhutff3tbohsv"
 ```
 
 **Para deployment:**
