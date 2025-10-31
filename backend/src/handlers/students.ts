@@ -1,9 +1,16 @@
 import type { LambdaEvent, LambdaResponse, Student } from '../types';
 import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
+import { requirePermission, unauthorizedResponse } from '../lib/authorization';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Verificar permisos: cualquier usuario autenticado puede ver estudiantes
+    const user = await requirePermission(event, 'students', 'read');
+    if (!user) {
+      return unauthorizedResponse();
+    }
+
     const { orgId } = event.queryStringParameters || {};
     const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
     const nextToken = event.queryStringParameters?.nextToken || null;
@@ -11,6 +18,9 @@ export async function list(event: LambdaEvent): Promise<LambdaResponse> {
     if (!orgId) {
       return errorResponse('orgId es requerido', 400);
     }
+
+    // Estudiantes solo pueden ver su propia información (futuro)
+    // Por ahora, todos los roles autenticados pueden ver la lista
 
     // Query students by orgId (paginado)
     const { items, lastEvaluatedKey } = await DynamoDBService.queryPaginated(
@@ -76,6 +86,12 @@ export async function get(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function create(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin pueden crear estudiantes
+    const user = await requirePermission(event, 'students', 'create');
+    if (!user) {
+      return unauthorizedResponse('Solo administradores pueden crear estudiantes');
+    }
+
     const body = parseJsonBody(event.body) as Partial<Student> & {
       orgId: string;
     };
@@ -137,6 +153,12 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function update(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin pueden actualizar estudiantes
+    const user = await requirePermission(event, 'students', 'update');
+    if (!user) {
+      return unauthorizedResponse('Solo administradores pueden actualizar estudiantes');
+    }
+
     const { studentId } = event.pathParameters || {};
     const orgId = event.queryStringParameters?.orgId;
     const body = parseJsonBody(event.body) as Partial<Student>;
@@ -191,6 +213,12 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function remove(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin pueden eliminar estudiantes
+    const user = await requirePermission(event, 'students', 'delete');
+    if (!user) {
+      return unauthorizedResponse('Solo administradores pueden eliminar estudiantes');
+    }
+
     const { studentId } = event.pathParameters || {};
     const orgId = event.queryStringParameters?.orgId;
 

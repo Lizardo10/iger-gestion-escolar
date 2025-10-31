@@ -49,6 +49,7 @@ provider:
             - cognito-idp:AdminGetUser
             - cognito-idp:AdminUpdateUserAttributes
             - cognito-idp:AdminDeleteUser
+            - cognito-idp:AdminSetUserPassword
             - cognito-idp:AdminInitiateAuth
             - cognito-idp:AdminRespondToAuthChallenge
             - cognito-idp:ListUsers
@@ -96,6 +97,86 @@ functions:
     events:
       - http:
           path: auth/logout
+          method: post
+          cors: true
+  
+  authCreateUser:
+    handler: src/handlers/auth.createUser
+    events:
+      - http:
+          path: auth/admin/create-user
+          method: post
+          cors: true
+  
+  authChangePassword:
+    handler: src/handlers/auth.changePasswordHandler
+    events:
+      - http:
+          path: auth/change-password
+          method: post
+          cors: true
+  
+  authConfirmEmail:
+    handler: src/handlers/auth.confirmEmailHandler
+    events:
+      - http:
+          path: auth/confirm-email
+          method: post
+          cors: true
+  
+  authForgotPassword:
+    handler: src/handlers/auth.forgotPasswordHandler
+    events:
+      - http:
+          path: auth/forgot-password
+          method: post
+          cors: true
+  
+  authConfirmForgotPassword:
+    handler: src/handlers/auth.confirmForgotPasswordHandler
+    events:
+      - http:
+          path: auth/confirm-forgot-password
+          method: post
+          cors: true
+  
+  authMFASetup:
+    handler: src/handlers/auth.setupMFA
+    events:
+      - http:
+          path: auth/mfa/setup
+          method: post
+          cors: true
+  
+  authMFAVerify:
+    handler: src/handlers/auth.verifyMFA
+    events:
+      - http:
+          path: auth/mfa/verify
+          method: post
+          cors: true
+  
+  authMFAEnable:
+    handler: src/handlers/auth.toggleMFA
+    events:
+      - http:
+          path: auth/mfa/enable
+          method: post
+          cors: true
+  
+  authMFADisable:
+    handler: src/handlers/auth.toggleMFA
+    events:
+      - http:
+          path: auth/mfa/disable
+          method: post
+          cors: true
+  
+  authMFARespond:
+    handler: src/handlers/auth.respondMFA
+    events:
+      - http:
+          path: auth/mfa/respond
           method: post
           cors: true
   

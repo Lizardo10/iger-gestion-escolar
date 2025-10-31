@@ -1,6 +1,7 @@
 import type { LambdaEvent, LambdaResponse, Event } from '../types';
 import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
+import { requirePermission, unauthorizedResponse } from '../lib/authorization';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
@@ -86,6 +87,12 @@ export async function get(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function create(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden crear eventos
+    const user = await requirePermission(event, 'events', 'create');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para crear eventos');
+    }
+
     const body = parseJsonBody(event.body) as Partial<Event> & { orgId?: string };
 
     // Log para debug
@@ -173,6 +180,12 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function update(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden actualizar eventos
+    const user = await requirePermission(event, 'events', 'update');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para actualizar eventos');
+    }
+
     const { eventId } = event.pathParameters || {};
     const orgId = event.queryStringParameters?.orgId;
     const body = parseJsonBody(event.body) as Partial<Event>;
@@ -219,6 +232,12 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function remove(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden eliminar eventos
+    const user = await requirePermission(event, 'events', 'delete');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para eliminar eventos');
+    }
+
     const { eventId } = event.pathParameters || {};
     const orgId = event.queryStringParameters?.orgId;
 

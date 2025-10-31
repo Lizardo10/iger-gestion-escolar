@@ -1,9 +1,16 @@
 import type { LambdaEvent, LambdaResponse, Task } from '../types';
 import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTimestamp, validateString, validateISODate, encodeNextToken, decodeNextToken } from '../lib/utils';
 import { DynamoDBService } from '../lib/dynamodb';
+import { requirePermission, unauthorizedResponse } from '../lib/authorization';
 
 export async function list(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Cualquier usuario autenticado puede ver tareas
+    const user = await requirePermission(event, 'tasks', 'read');
+    if (!user) {
+      return unauthorizedResponse();
+    }
+
     const { classId, orgId } = event.queryStringParameters || {};
     const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
     const nextToken = event.queryStringParameters?.nextToken || null;
@@ -75,6 +82,12 @@ export async function get(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function create(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden crear tareas
+    const user = await requirePermission(event, 'tasks', 'create');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para crear tareas');
+    }
+
     const body = parseJsonBody(event.body) as Partial<Task> & {
       classId: string;
     };
@@ -136,6 +149,12 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function update(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden actualizar tareas
+    const user = await requirePermission(event, 'tasks', 'update');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para actualizar tareas');
+    }
+
     const { classId, taskId } = event.pathParameters || {};
     const body = parseJsonBody(event.body) as Partial<Task>;
 
@@ -183,6 +202,12 @@ export async function update(event: LambdaEvent): Promise<LambdaResponse> {
 
 export async function remove(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Solo admin/superadmin y teachers pueden eliminar tareas
+    const user = await requirePermission(event, 'tasks', 'delete');
+    if (!user) {
+      return unauthorizedResponse('No tienes permisos para eliminar tareas');
+    }
+
     const { classId, taskId } = event.pathParameters || {};
 
     if (!classId || !taskId) {
