@@ -1,12 +1,168 @@
-openapi: 3.0.3
+openapi: 3.1.0
 info:
   title: Iger API
   version: 0.1.0
-  description: API para gestión escolar (students, tasks, events) - baseline
+  description: API para gestión escolar (students, tasks, events, auth, payments)
 servers:
   - url: https://unfepih103.execute-api.us-east-1.amazonaws.com/dev
     description: Dev
 paths:
+  # ===== AUTHENTICATION =====
+  /auth/register:
+    post:
+      summary: Registrar nuevo usuario
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Usuario creado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '400':
+          description: Datos inválidos
+  /auth/login:
+    post:
+      summary: Iniciar sesión
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '200':
+          description: Login exitoso
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Credenciales inválidas
+  /auth/refresh:
+    post:
+      summary: Refrescar token
+      tags: [Auth]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RefreshRequest' }
+      responses:
+        '200':
+          description: Token refrescado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/AuthResponse' }
+        '401':
+          description: Token inválido
+  /auth/logout:
+    post:
+      summary: Cerrar sesión
+      tags: [Auth]
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Logout exitoso
+
+  # ===== PAYMENTS =====
+  /payments/subscription:
+    post:
+      summary: Crear suscripción de pago
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/SubscriptionCreate' }
+      responses:
+        '201':
+          description: Suscripción creada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+        '400':
+          description: Datos inválidos
+  /payments/subscription/{subscriptionId}:
+    get:
+      summary: Obtener suscripción
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Subscription' }
+    delete:
+      summary: Cancelar suscripción
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: subscriptionId
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Suscripción cancelada
+  /payments/invoices:
+    get:
+      summary: Listar facturas
+      tags: [Payments]
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: orgId
+          required: true
+          schema: { type: string }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 100, default: 20 }
+        - in: query
+          name: nextToken
+          schema: { type: string }
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  invoices:
+                    type: array
+                    items: { $ref: '#/components/schemas/Invoice' }
+                  nextToken: { type: string, nullable: true }
+  /payments/webhook:
+    post:
+      summary: Webhook para notificaciones de pago (Stripe/PayPal)
+      tags: [Payments]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Evento del proveedor de pagos
+      responses:
+        '200':
+          description: Webhook procesado
+
   /students:
     get:
       summary: Listar estudiantes
@@ -417,3 +573,90 @@ components:
         startDate: { type: string, format: date-time }
         endDate: { type: string, format: date-time }
         location: { type: string }
+
+    # ===== AUTH SCHEMAS =====
+    RegisterRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password, minLength: 8 }
+        firstName: { type: string }
+        lastName: { type: string }
+        orgId: { type: string, description: 'Opcional: ID de organización si ya existe' }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    RefreshRequest:
+      type: object
+      required: [refreshToken]
+      properties:
+        refreshToken: { type: string }
+    AuthResponse:
+      type: object
+      properties:
+        accessToken: { type: string }
+        refreshToken: { type: string }
+        idToken: { type: string }
+        expiresIn: { type: integer }
+        user:
+          type: object
+          properties:
+            id: { type: string }
+            email: { type: string }
+            firstName: { type: string }
+            lastName: { type: string }
+            orgId: { type: string }
+
+    # ===== PAYMENT SCHEMAS =====
+    SubscriptionCreate:
+      type: object
+      required: [orgId, planId, paymentMethodId]
+      properties:
+        orgId: { type: string }
+        planId:
+          type: string
+          enum: [basic, premium, enterprise]
+          description: Plan de suscripción
+        paymentMethodId: { type: string, description: 'ID del método de pago en Stripe/PayPal' }
+        couponCode: { type: string, description: 'Código de descuento opcional' }
+    Subscription:
+      type: object
+      properties:
+        id: { type: string }
+        orgId: { type: string }
+        planId: { type: string, enum: [basic, premium, enterprise] }
+        status:
+          type: string
+          enum: [active, cancelled, past_due, trialing]
+        currentPeriodStart: { type: string, format: date-time }
+        currentPeriodEnd: { type: string, format: date-time }
+        cancelAtPeriodEnd: { type: boolean }
+        createdAt: { type: integer }
+        updatedAt: { type: integer }
+    Invoice:
+      type: object
+      properties:
+        id: { type: string }
+        orgId: { type: string }
+        subscriptionId: { type: string }
+        amount: { type: number, description: 'Monto en centavos' }
+        currency: { type: string, default: 'usd' }
+        status:
+          type: string
+          enum: [draft, open, paid, void, uncollectible]
+        invoiceDate: { type: string, format: date-time }
+        dueDate: { type: string, format: date-time }
+        paidAt: { type: string, format: date-time, nullable: true }
+        pdfUrl: { type: string, format: uri, nullable: true }
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtenido de /auth/login
+
