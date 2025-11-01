@@ -84,7 +84,6 @@ export async function signUp(params: RegisterParams): Promise<{ userId: string }
   try {
     const attributes: Array<{ Name: string; Value: string }> = [
       { Name: 'email', Value: email },
-      { Name: 'email_verified', Value: 'false' },
       { Name: 'given_name', Value: firstName },
       { Name: 'family_name', Value: lastName },
     ];
