@@ -454,7 +454,8 @@ functions:
           method: post
           cors: true
 
-# plugins:
+plugins:
+  - serverless-dotenv-plugin
   # - serverless-plugin-typescript
   # - serverless-offline
 
