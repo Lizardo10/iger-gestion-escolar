@@ -2,31 +2,78 @@
 
 Esta guía te ayudará a configurar todos los aspectos de Cognito necesarios para el sistema Iger.
 
+## 📋 Guía Rápida: Dónde Está Cada Configuración
+
+**Estructura del menú en Cognito User Pool:**
+
+```
+Cognito → User Pools → us-east-1_gY5JpRMyV
+│
+├── Sign-in experience
+│   ├── Policies (Password policy, Account recovery)
+│   └── Multi-factor authentication (MFA)
+│
+├── Messaging
+│   └── Email (Email provider)
+│
+├── App integration
+│   └── App clients (Authentication flows, Token expiration)
+│
+├── Attributes (atributos personalizados)
+│
+└── Users (asignar roles a usuarios)
+```
+
+**Pasos esenciales en orden:**
+1. ✅ **Atributos personalizados** (custom:role, custom:orgId)
+2. ✅ **Password policy** y **Account recovery** (en Sign-in experience → Policies)
+3. ✅ **Email provider** (en Messaging)
+4. ✅ **MFA** (en Sign-in experience → Multi-factor authentication)
+5. ✅ **App Client** (en App integration → App clients)
+
+---
+
 ## 1. Configurar Atributos Personalizados
 
 ### Paso 1: Acceder al User Pool
 
-1. Ve a **AWS Console** → **Cognito** → **User Pools**
-2. Selecciona tu User Pool: `us-east-1_gY5JpRMyV`
-3. En el menú lateral, ve a **Attributes**
+1. Abre tu navegador y ve a [AWS Console](https://console.aws.amazon.com/)
+2. Busca **Cognito** en la barra de búsqueda superior o ve a **Services** → **Security, Identity & Compliance** → **Cognito**
+3. Click en **User Pools** (en el menú lateral izquierdo)
+4. Busca y selecciona tu User Pool: `us-east-1_gY5JpRMyV`
+5. En el menú lateral izquierdo dentro del User Pool, busca y click en **Attributes**
+
+**Nota**: Si no ves "Attributes" en el menú, puede estar bajo **Sign-in experience** → **Attributes**. La interfaz puede variar según la versión.
 
 ### Paso 2: Agregar Atributos Personalizados
 
-Click en **Add custom attribute** para cada uno:
+**En la página de Attributes:**
+1. Scroll hacia abajo hasta encontrar la sección **Custom attributes**
+2. Click en el botón **Add custom attribute** (o **Create custom attribute**)
+3. Se abrirá un formulario para agregar cada atributo
 
-#### Atributo `role`
-- **Name**: `role`
-- **Type**: String
-- **Min length**: 1
-- **Max length**: 50
-- **Mutable**: ✅ Yes (puede cambiar)
+**Agregar el primer atributo (`role`):**
 
-#### Atributo `orgId`
-- **Name**: `orgId`
-- **Type**: String
-- **Min length**: 1
-- **Max length**: 100
-- **Mutable**: ✅ Yes (puede cambiar)
+1. En el formulario, completa:
+   - **Name**: `role` (solo el nombre, sin "custom:")
+   - **Type**: Selecciona **String**
+   - **Min length**: `1`
+   - **Max length**: `50`
+   - **Mutable**: ✅ Marca **Yes** (para que pueda cambiar después)
+2. Click en **Save changes** (o **Create attribute**)
+
+**Agregar el segundo atributo (`orgId`):**
+
+1. Click nuevamente en **Add custom attribute**
+2. Completa el formulario:
+   - **Name**: `orgId` (solo el nombre, sin "custom:")
+   - **Type**: Selecciona **String**
+   - **Min length**: `1`
+   - **Max length**: `100`
+   - **Mutable**: ✅ Marca **Yes**
+3. Click en **Save changes**
+
+**⚠️ Importante**: Cognito automáticamente añade el prefijo `custom:` a estos atributos. Por eso cuando los uses en el código, se llamarán `custom:role` y `custom:orgId`, pero al crearlos solo pones `role` y `orgId`.
 
 ### Paso 3: Verificar desde CLI
 
@@ -41,51 +88,113 @@ aws cognito-idp describe-user-pool \
 
 ### Habilitar Verificación de Email
 
-1. Ve a **User Pool** → **Policies**
-2. En **Password policy**, configura:
-   - ✅ Require at least 8 characters
-   - ✅ Require numbers
-   - ✅ Require symbols
-3. En **Account recovery**, habilita:
-   - ✅ Email (para recuperación de contraseña)
+**Ubicación en la consola:**
+1. Ve a **AWS Console** → **Cognito** → **User Pools**
+2. Selecciona tu User Pool: `us-east-1_gY5JpRMyV`
+3. En el menú lateral izquierdo, busca **Sign-in experience**
+4. Dentro de **Sign-in experience**, ve a **Policies**
+5. En la sección **Password policy**, configura:
+   - ✅ **Minimum length**: 8 (o más)
+   - ✅ **Require numbers**: ✅ Enabled
+   - ✅ **Require symbols**: ✅ Enabled
+   - ✅ **Require uppercase letters**: ✅ Enabled (recomendado)
+   - ✅ **Require lowercase letters**: ✅ Enabled (recomendado)
+6. En la sección **Account recovery**, habilita:
+   - ✅ **Email** (para recuperación de contraseña)
+   - Opcional: **Phone** (si quieres recuperación por SMS)
 
-### Configurar Email (Opcional - si quieres personalizar)
+### Configurar Email Provider
 
-1. Ve a **User Pool** → **Messaging**
-2. Configura el **Email** provider:
-   - Opción 1: **Cognito default** (usa SES con límites)
-   - Opción 2: **AWS SES** (más control, requiere verificar dominio)
+**Ubicación en la consola:**
+1. En el mismo User Pool (`us-east-1_gY5JpRMyV`)
+2. En el menú lateral izquierdo, ve a **Messaging**
+3. En la sección **Email**, verás dos opciones:
 
-Para usar SES:
+#### Opción 1: Cognito Default (Más fácil - Recomendado para empezar)
+- ✅ Selecciona **Cognito default**
+- Cognito enviará emails usando SES en modo "sandbox" (limitado)
+- **Límites**: Solo puedes enviar a emails verificados en SES sandbox
+- **Ventaja**: No requiere configuración adicional
+
+#### Opción 2: AWS SES (Más control - Para producción)
+- ✅ Selecciona **AWS SES**
+- Necesitas:
+  1. Verificar tu dominio o email en SES
+  2. Salir del modo "sandbox" de SES (requiere solicitud a AWS)
+
+**Pasos para configurar SES:**
+
 ```bash
-# Verificar dominio en SES
-aws ses verify-domain-identity --domain example.com --profile IgerApp
+# 1. Verificar dominio en SES (si tienes dominio)
+aws ses verify-domain-identity \
+  --domain example.com \
+  --profile IgerApp
+
+# 2. O verificar email individual (más fácil para pruebas)
+aws ses verify-email-identity \
+  --email-address noreply@example.com \
+  --profile IgerApp
+
+# 3. Verificar estado de verificación
+aws ses get-identity-verification-attributes \
+  --identities example.com \
+  --profile IgerApp
+
+# 4. Solicitar salir de sandbox (para producción)
+# Ve a SES Console → Account dashboard → Request production access
 ```
+
+**Luego en la consola:**
+1. En **Messaging** → **Email**
+2. Selecciona **AWS SES**
+3. Elige tu **From email address** (debe estar verificado en SES)
+4. Elige tu **From sender name** (opcional)
+5. Guarda los cambios
 
 ## 3. Configurar MFA (Multi-Factor Authentication)
 
 ### Habilitar MFA en el User Pool
 
-1. Ve a **User Pool** → **Sign-in experience** → **Multi-factor authentication**
-2. Selecciona:
-   - ✅ **Optional** (el usuario puede habilitarlo)
-   - O **Required** (obligatorio para todos)
-3. En **MFA methods**, habilita:
-   - ✅ **TOTP** (Time-based One-Time Password)
-   - ✅ **SMS** (opcional)
+**Ubicación en la consola:**
+1. Ve a **AWS Console** → **Cognito** → **User Pools**
+2. Selecciona tu User Pool: `us-east-1_gY5JpRMyV`
+3. En el menú lateral izquierdo, ve a **Sign-in experience**
+4. Dentro de **Sign-in experience**, busca **Multi-factor authentication**
+5. Click en **Edit**
+6. En **MFA enforcement**, selecciona:
+   - ✅ **Optional** (el usuario puede habilitarlo) - Recomendado
+   - O **Required** (obligatorio para todos) - Más seguro pero menos flexible
+7. En **MFA methods**, habilita:
+   - ✅ **Software token MFA (TOTP)** - REQUERIDO para nuestro sistema
+   - Opcional: **SMS MFA** - Requiere configuración de SNS (más complejo)
+8. Click en **Save changes**
+
+**Nota**: Para usar TOTP, los usuarios necesitarán una app como:
+- Google Authenticator
+- Authy
+- Microsoft Authenticator
 
 ### Configurar MFA para App Client
 
-1. Ve a **User Pool** → **App integration** → **App clients**
-2. Selecciona `iger-backend-client` (ID: `55hal9q6ogn0orhutff3tbohsv`)
-3. En **Authentication flows**, asegúrate de tener:
-   - ✅ ALLOW_USER_PASSWORD_AUTH
-   - ✅ ALLOW_REFRESH_TOKEN_AUTH
-   - ✅ ALLOW_USER_SRP_AUTH (recomendado)
-4. En **Advanced settings** → **Token expiration**:
-   - Access token: 1 hora (3600 segundos)
-   - ID token: 1 hora
-   - Refresh token: 30 días (2592000 segundos)
+**Ubicación en la consola:**
+1. En el mismo User Pool
+2. En el menú lateral izquierdo, ve a **App integration**
+3. Dentro de **App integration**, busca **App clients**
+4. Selecciona `iger-backend-client` (ID: `55hal9q6ogn0orhutff3tbohsv`)
+5. Si no existe, click en **Create app client**
+6. Click en **Edit** o en el nombre del app client
+7. En **Authentication flows**, asegúrate de tener habilitado:
+   - ✅ **ALLOW_USER_PASSWORD_AUTH** - REQUERIDO
+   - ✅ **ALLOW_REFRESH_TOKEN_AUTH** - REQUERIDO
+   - ✅ **ALLOW_USER_SRP_AUTH** - Recomendado (más seguro que password auth)
+8. Scroll hacia abajo a **Advanced settings**
+9. En **Token expiration**, configura:
+   - **Access token**: 1 hora (3600 segundos) - Default suele estar bien
+   - **ID token**: 1 hora (3600 segundos) - Default suele estar bien
+   - **Refresh token**: 30 días (2592000 segundos) - Default suele estar bien
+10. Click en **Save changes**
+
+**Nota**: Si no ves estas opciones, asegúrate de que estás editando el App Client correcto.
 
 ## 4. Roles y Permisos
 
@@ -98,16 +207,44 @@ aws ses verify-domain-identity --domain example.com --profile IgerApp
 
 ### Asignar Rol a Usuario
 
-Los roles se asignan automáticamente cuando:
-1. **Admin crea usuario**: Se asigna el rol especificado
-2. **Auto-registro**: Por defecto es `student`
+**Los roles se asignan automáticamente cuando:**
+1. **Admin crea usuario**: Se asigna el rol especificado en el request
+2. **Auto-registro**: Por defecto es `student` (puedes cambiar esto en el código)
 
-Para cambiar el rol de un usuario existente:
+**Para asignar/cambiar rol desde la consola:**
+1. Ve a **AWS Console** → **Cognito** → **User Pools**
+2. Selecciona tu User Pool: `us-east-1_gY5JpRMyV`
+3. En el menú lateral, ve a **Users**
+4. Busca el usuario por email
+5. Click en el email del usuario
+6. Click en **Edit** (arriba a la derecha)
+7. En **Attributes**, busca `custom:role`
+8. Si no aparece, click en **Add custom attribute**
+9. Asigna el valor: `superadmin`, `admin`, `teacher`, o `student`
+10. Click en **Save changes**
+
+**Para asignar/cambiar rol desde CLI:**
 ```bash
+# Cambiar rol de un usuario
 aws cognito-idp admin-update-user-attributes \
   --user-pool-id us-east-1_gY5JpRMyV \
   --username usuario@example.com \
   --user-attributes Name=custom:role,Value=teacher \
+  --profile IgerApp
+
+# Asignar orgId también
+aws cognito-idp admin-update-user-attributes \
+  --user-pool-id us-east-1_gY5JpRMyV \
+  --username usuario@example.com \
+  --user-attributes \
+    Name=custom:role,Value=teacher \
+    Name=custom:orgId,Value=org-1 \
+  --profile IgerApp
+
+# Ver atributos actuales de un usuario
+aws cognito-idp admin-get-user \
+  --user-pool-id us-east-1_gY5JpRMyV \
+  --username usuario@example.com \
   --profile IgerApp
 ```
 
@@ -351,4 +488,5 @@ Una vez configurado todo:
 3. ✅ Configura MFA para un usuario de prueba
 4. ✅ Verifica que los roles funcionen correctamente
 5. ✅ Prueba los permisos en diferentes endpoints
+
 
