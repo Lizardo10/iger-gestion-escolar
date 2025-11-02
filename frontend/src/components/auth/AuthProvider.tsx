@@ -24,12 +24,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // Inicializar AuthService una sola vez al montar
+    // Esto validará el token y marcará como autenticado solo si es válido
     AuthService.init()
       .then(() => {
+        // Verificar que la autenticación se validó correctamente
+        const isAuth = AuthService.isAuthenticated();
+        console.log('Auth initialized, isAuthenticated:', isAuth);
         setIsReady(true);
       })
       .catch((error) => {
         console.error('Error initializing auth:', error);
+        // Asegurar que no esté autenticado si hay error
+        AuthService.clearAll();
         setIsReady(true); // Continuar incluso si hay error
       });
   }, []);

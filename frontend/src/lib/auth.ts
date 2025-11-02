@@ -92,6 +92,7 @@ export class AuthService {
 
   /**
    * Inicializa el estado de forma síncrona (para lectura inicial)
+   * IMPORTANTE: NO marca como autenticado hasta que se valide el token
    */
   private static initSync(): void {
     if (this.initialized) return;
@@ -103,18 +104,34 @@ export class AuthService {
           const parsed = JSON.parse(stored);
           const { token, refreshToken, idToken, user } = parsed;
           
-          if (token && user) {
+          // Validar que todos los datos necesarios estén presentes
+          if (token && user && user.email && user.role) {
+            // Guardar temporalmente pero NO marcar como autenticado todavía
+            // El método init() asíncrono validará el token antes de marcar como autenticado
             this.state.token = token;
             this.state.user = user;
-            this.state.isAuthenticated = true;
-            this.initialized = true;
+            // CRÍTICO: NO marcar como autenticado aquí - esperar validación
+            this.state.isAuthenticated = false;
           } else {
+            // Datos incompletos, limpiar
+            console.warn('Auth data incomplete, clearing');
             localStorage.removeItem(AUTH_STORAGE_KEY);
+            this.state.user = null;
+            this.state.token = null;
+            this.state.isAuthenticated = false;
           }
         } catch (parseError) {
           console.error('Error parsing stored auth state:', parseError);
           localStorage.removeItem(AUTH_STORAGE_KEY);
+          this.state.user = null;
+          this.state.token = null;
+          this.state.isAuthenticated = false;
         }
+      } else {
+        // No hay datos, asegurar que está deslogueado
+        this.state.user = null;
+        this.state.token = null;
+        this.state.isAuthenticated = false;
       }
     } catch (error) {
       console.error('Error initializing auth sync:', error);
@@ -147,7 +164,9 @@ export class AuthService {
           const parsed = JSON.parse(stored);
           const { token, refreshToken, idToken, user } = parsed;
           
-          if (token && user) {
+          // Validar que el token y user sean válidos
+          if (token && user && user.email && user.role && typeof token === 'string' && token.length > 10) {
+            // Token parece válido, marcar como autenticado
             this.state.token = token;
             this.state.user = user;
             this.state.isAuthenticated = true;
