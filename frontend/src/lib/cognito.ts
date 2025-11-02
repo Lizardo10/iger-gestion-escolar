@@ -31,63 +31,129 @@ export interface AuthResult {
     email: string;
     firstName?: string;
     lastName?: string;
-    role?: string;
+    role?: 'superadmin' | 'admin' | 'teacher' | 'student';
+    orgId?: string;
   };
 }
 
+import { api } from './api';
+
 export class CognitoService {
   /**
-   * Registra un nuevo usuario - MOCK por ahora
+   * Registra un nuevo usuario
    */
   static async signUp({ email, password, firstName, lastName, role }: SignUpParams): Promise<unknown> {
-    // TODO: Implementar con Cognito real
-    console.log('Mock signUp:', { email, password, firstName, lastName, role });
-    return Promise.resolve({ success: true });
+    const response = await api.post('/auth/register', {
+      email,
+      password,
+      firstName,
+      lastName,
+      role,
+    });
+    return response.data;
   }
 
   /**
-   * Inicia sesión - MOCK por ahora
+   * Inicia sesión usando el backend API
    */
   static async login({ email, password }: LoginParams): Promise<AuthResult> {
-    // TODO: Implementar con Cognito real
-    console.log('Mock login:', { email, password });
-    
-    return Promise.resolve({
-      accessToken: 'mock-token',
-      refreshToken: 'mock-refresh',
-      idToken: 'mock-id-token',
-      user: {
-        id: 'mock-user-id',
+    try {
+      const response = await api.post<{
+        accessToken: string;
+        refreshToken: string;
+        idToken: string;
+        user: {
+          id: string;
+          email: string;
+          firstName?: string;
+          lastName?: string;
+          role?: string;
+          orgId?: string;
+        };
+      }>('/auth/login', {
         email,
-        firstName: 'Mock',
-        lastName: 'User',
-        role: 'admin',
-      },
-    });
+        password,
+      });
+
+      const data = response.data;
+      
+      return {
+        accessToken: data.accessToken,
+        refreshToken: data.refreshToken,
+        idToken: data.idToken,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          role: data.user.role as 'superadmin' | 'admin' | 'teacher' | 'student',
+          orgId: data.user.orgId,
+        },
+      };
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error al iniciar sesión';
+      throw new Error(errorMessage);
+    }
   }
 
   /**
-   * Cierra sesión - MOCK por ahora
+   * Cierra sesión
    */
   static async logout(): Promise<void> {
-    console.log('Mock logout');
-    return Promise.resolve();
+    try {
+      const token = localStorage.getItem('iger_auth_state');
+      if (token) {
+        const authState = JSON.parse(token);
+        if (authState.token) {
+          await api.post('/auth/logout', {}, {
+            headers: { Authorization: `Bearer ${authState.token}` },
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error en logout:', error);
+      // Continuar con el logout local aunque falle el logout del backend
+    }
   }
 
   /**
-   * Obtiene el usuario actual - MOCK por ahora
+   * Obtiene el usuario actual desde localStorage
+   * Nota: Esta función usa la misma clave que AuthService
    */
   static async getCurrentUser(): Promise<AuthResult | null> {
-    // TODO: Implementar con Cognito real
-    return Promise.resolve(null);
+    try {
+      const stored = localStorage.getItem('iger_auth_state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const { token, user } = parsed;
+        if (token && user) {
+          return {
+            accessToken: token,
+            refreshToken: parsed.refreshToken || '',
+            idToken: parsed.idToken || '',
+            user,
+          };
+        }
+      }
+    } catch (error) {
+      console.error('Error obteniendo usuario:', error);
+    }
+    return null;
   }
 
   /**
-   * Refresca el token de acceso - MOCK por ahora
+   * Refresca el token de acceso
    */
-  static async refreshToken(_refreshToken: string): Promise<string> {
-    console.log('Mock refreshToken');
-    return Promise.resolve('new-mock-token');
+  static async refreshToken(refreshToken: string): Promise<string> {
+    try {
+      const response = await api.post<{ accessToken: string }>('/auth/refresh', {
+        refreshToken,
+      });
+      return response.data.accessToken;
+    } catch (error: any) {
+      const errorMessage = error?.response?.data?.error || error?.message || 'Error al refrescar token';
+      throw new Error(errorMessage);
+    }
   }
 }
 

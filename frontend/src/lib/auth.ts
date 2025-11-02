@@ -27,29 +27,28 @@ export class AuthService {
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
-        const { token, user } = JSON.parse(stored);
-        this.state.token = token;
-        this.state.user = user;
-        this.state.isAuthenticated = true;
-
-        // Verificar si el token sigue válido
-        const currentUser = await CognitoService.getCurrentUser();
-        if (!currentUser) {
-          await this.logout();
-        }
-      } else {
-        // Intentar obtener usuario desde Cognito
-        const user = await CognitoService.getCurrentUser();
-        if (user) {
-          this.state.token = user.accessToken;
-          this.state.user = user.user;
-          this.state.isAuthenticated = true;
-          this.saveState();
+        try {
+          const { token, user } = JSON.parse(stored);
+          if (token && user) {
+            this.state.token = token;
+            this.state.user = user;
+            this.state.isAuthenticated = true;
+            // No validamos el token aquí para evitar logout innecesario
+            // El interceptor de API manejará los 401
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored auth state:', parseError);
+          // Si hay error parseando, limpiar y dejar sin autenticar
+          localStorage.removeItem(AUTH_STORAGE_KEY);
         }
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
-      await this.logout();
+      // No hacer logout automático, solo limpiar el estado
+      this.state.user = null;
+      this.state.token = null;
+      this.state.isAuthenticated = false;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
       this.state.isLoading = false;
       this.notifyListeners();
@@ -69,7 +68,8 @@ export class AuthService {
       this.state.user = result.user;
       this.state.isAuthenticated = true;
 
-      this.saveState();
+      // Guardar tokens completos
+      this.saveStateWithTokens(result);
       this.notifyListeners();
 
       return result;
@@ -154,6 +154,21 @@ export class AuthService {
       JSON.stringify({
         token: this.state.token,
         user: this.state.user,
+      })
+    );
+  }
+
+  /**
+   * Guarda el estado con todos los tokens (para login)
+   */
+  private static saveStateWithTokens(result: AuthResult): void {
+    localStorage.setItem(
+      AUTH_STORAGE_KEY,
+      JSON.stringify({
+        token: result.accessToken,
+        refreshToken: result.refreshToken,
+        idToken: result.idToken,
+        user: result.user,
       })
     );
   }

@@ -1,19 +1,32 @@
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../hooks/useAuth';
+
+interface NavItem {
+  path: string;
+  label: string;
+  icon: string;
+  roles: string[];
+}
 
 export function Sidebar() {
-  const navItems = [
-    { path: '/dashboard', label: 'Dashboard', icon: '📊' },
-    { path: '/students', label: 'Estudiantes', icon: '👥' },
-    { path: '/tasks', label: 'Tareas', icon: '📝' },
-    { path: '/events', label: 'Eventos', icon: '📅' },
-    { path: '/payments', label: 'Pagos', icon: '💳' },
-    { path: '/attendance', label: 'Asistencia', icon: '✅' },
+  const { hasAnyRole } = useAuth();
+
+  const navItems: NavItem[] = [
+    { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/students', label: 'Estudiantes', icon: '👥', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/tasks', label: 'Tareas', icon: '📝', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/events', label: 'Eventos', icon: '📅', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/payments', label: 'Pagos', icon: '💳', roles: ['superadmin', 'admin'] },
+    { path: '/attendance', label: 'Asistencia', icon: '✅', roles: ['superadmin', 'admin', 'teacher'] },
   ];
+
+  // Filtrar items según el rol del usuario
+  const visibleItems = navItems.filter((item) => hasAnyRole(...item.roles));
 
   return (
     <aside className="bg-gray-50 w-64 min-h-screen p-4 border-r">
       <nav className="space-y-2">
-        {navItems.map((item) => (
+        {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}

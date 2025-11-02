@@ -132,3 +132,4 @@ Authorization: Bearer <user-token>
 
 4. **Validación de Roles**: Cada endpoint verifica los permisos del usuario antes de permitir la operación.
 
+

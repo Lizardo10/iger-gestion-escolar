@@ -180,6 +180,14 @@ functions:
           method: post
           cors: true
   
+  authRespondNewPassword:
+    handler: src/handlers/auth.respondNewPassword
+    events:
+      - http:
+          path: auth/respond-new-password
+          method: post
+          cors: true
+  
   getStudents:
     handler: src/handlers/students.list
     events:
@@ -356,6 +364,14 @@ functions:
       - http:
           path: events/{eventId}
           method: delete
+          cors: true
+  
+  listInvoices:
+    handler: src/handlers/payments.listInvoices
+    events:
+      - http:
+          path: payments/invoices
+          method: get
           cors: true
   
   createInvoice:

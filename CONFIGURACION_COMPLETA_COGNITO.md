@@ -162,8 +162,10 @@ aws ses get-identity-verification-attributes \
 4. Dentro de **Sign-in experience**, busca **Multi-factor authentication**
 5. Click en **Edit**
 6. En **MFA enforcement**, selecciona:
-   - ✅ **Optional** (el usuario puede habilitarlo) - Recomendado
-   - O **Required** (obligatorio para todos) - Más seguro pero menos flexible
+   - ✅ **Optional** (el usuario puede habilitarlo) - **RECOMENDADO para desarrollo**
+   - ⚠️ **Required** (obligatorio para todos) - Requiere que TODOS los usuarios configuren MFA antes de poder iniciar sesión
+   
+   **⚠️ IMPORTANTE**: Si seleccionas "Required", los usuarios nuevos NO podrán iniciar sesión hasta que configuren MFA primero. Esto puede causar problemas en desarrollo. Para producción, considera "Optional" y luego puedes hacer MFA requerido para roles específicos.
 7. En **MFA methods**, habilita:
    - ✅ **Software token MFA (TOTP)** - REQUERIDO para nuestro sistema
    - Opcional: **SMS MFA** - Requiere configuración de SNS (más complejo)

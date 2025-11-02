@@ -3,9 +3,10 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
-  role: 'admin' | 'teacher' | 'student' | 'parent';
-  createdAt: string;
-  updatedAt: string;
+  role: 'superadmin' | 'admin' | 'teacher' | 'student';
+  orgId?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface Student {

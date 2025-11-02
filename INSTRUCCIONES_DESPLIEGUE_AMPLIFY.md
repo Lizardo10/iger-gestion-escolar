@@ -46,7 +46,7 @@ Si aún no funciona:
 
 Después de que Amplify termine de desplegar:
 
-1. Ve a: https://dev.d2umdnu9x2m9qg.amplifyapp.com/tasks
+1. Ve a: httpsage al usuio que porque//dev.d2umdnu9x2m9qg.amplifyapp.com/tasks
 2. Presiona `Ctrl + Shift + R` para hard refresh
 3. Abre las **DevTools** (`F12`)
 4. Ve a la pestaña **"Network"**

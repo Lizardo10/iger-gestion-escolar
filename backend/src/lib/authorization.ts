@@ -34,10 +34,12 @@ export function extractToken(event: LambdaEvent): string | null {
  */
 export async function getAuthenticatedUser(accessToken: string): Promise<AuthenticatedUser | null> {
   try {
+    console.log('Validando token, longitud:', accessToken?.length || 0);
     const command = new GetUserCommand({ AccessToken: accessToken });
     const response = await cognitoClient.send(command);
 
     if (!response.Username) {
+      console.warn('No se encontró Username en la respuesta de Cognito');
       return null;
     }
 
@@ -48,16 +50,22 @@ export async function getAuthenticatedUser(accessToken: string): Promise<Authent
     const roleAttr = userAttributes.find((attr) => attr.Name === 'custom:role');
     const orgIdAttr = userAttributes.find((attr) => attr.Name === 'custom:orgId');
 
+    const role = (roleAttr?.Value as UserRole) || 'student';
+    console.log('Usuario autenticado:', { email: emailAttr?.Value, role });
+
     return {
       id: response.Username,
       email: emailAttr?.Value || '',
-      role: (roleAttr?.Value as UserRole) || 'student',
+      role: role,
       firstName: firstNameAttr?.Value,
       lastName: lastNameAttr?.Value,
       orgId: orgIdAttr?.Value,
     };
   } catch (error) {
-    console.error('Error obteniendo usuario:', error);
+    console.error('Error obteniendo usuario:', error instanceof Error ? error.message : error);
+    if (error instanceof Error && error.name === 'NotAuthorizedException') {
+      console.error('Token inválido o expirado. Asegúrate de usar el accessToken, no refreshToken ni idToken.');
+    }
     return null;
   }
 }
@@ -126,4 +134,5 @@ export function unauthorizedResponse(message = 'No autorizado'): { statusCode: n
 export function forbiddenResponse(message = 'No tienes permisos para realizar esta acción'): { statusCode: number; headers: Record<string, string>; body: string } {
   return errorResponse(message, 403);
 }
+
 

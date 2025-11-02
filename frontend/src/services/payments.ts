@@ -36,6 +36,12 @@ class PaymentsService {
       total: number;
       page: number;
       limit: number;
+      pagination?: {
+        page: number;
+        limit: number;
+        hasMore: boolean;
+        lastKey?: string;
+      };
     }>(`/payments/invoices?${queryParams.toString()}`);
 
     return response.data;
@@ -52,7 +58,7 @@ class PaymentsService {
   }
 
   async createPayPalOrder(orgId: string, invoiceId: string) {
-    const response = await api.post<{ orderId: string; approvalUrl: string }>('/payments/paypal/orders', {
+    const response = await api.post<{ orderId: string; approvalUrl: string }>('/payments/create-order', {
       orgId,
       invoiceId,
     });

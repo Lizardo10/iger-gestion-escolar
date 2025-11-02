@@ -12,6 +12,7 @@ import {
   ChangePasswordCommand,
   AdminUpdateUserAttributesCommand,
   ForgotPasswordCommand,
+  AdminInitiateAuthCommand,
   ConfirmForgotPasswordCommand,
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
@@ -48,11 +49,11 @@ export interface LoginParams {
 }
 
 export interface AuthResult {
-  accessToken: string;
-  refreshToken: string;
-  idToken: string;
-  expiresIn: number;
-  user: {
+  accessToken?: string;
+  refreshToken?: string;
+  idToken?: string;
+  expiresIn?: number;
+  user?: {
     id: string;
     email: string;
     firstName?: string;
@@ -60,6 +61,9 @@ export interface AuthResult {
     role?: UserRole;
     orgId?: string;
   };
+  challengeName?: string;
+  session?: string;
+  message?: string;
 }
 
 /**
@@ -140,7 +144,8 @@ export async function signIn(params: LoginParams): Promise<AuthResult> {
   }
 
   try {
-    const authParams: InitiateAuthCommandInput = {
+    // Primero intentar con InitiateAuthCommand (cliente)
+    let authParams: InitiateAuthCommandInput = {
       AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
       ClientId: CLIENT_ID,
       AuthParameters: {
@@ -149,11 +154,63 @@ export async function signIn(params: LoginParams): Promise<AuthResult> {
       },
     };
 
-    const command = new InitiateAuthCommand(authParams);
-    const response = await client.send(command);
+    let command = new InitiateAuthCommand(authParams);
+    let response = await client.send(command);
+
+    // Si hay desafío MFA_SETUP y el User Pool tiene MFA obligatorio,
+    // usar AdminInitiateAuth para saltar el setup (solo funciona si el usuario tiene permisos)
+    if (response.ChallengeName === 'MFA_SETUP' && USER_POOL_ID) {
+      console.log('MFA_SETUP detectado, intentando AdminInitiateAuth para saltar setup');
+      try {
+        const adminCommand = new AdminInitiateAuthCommand({
+          UserPoolId: USER_POOL_ID,
+          ClientId: CLIENT_ID,
+          AuthFlow: AuthFlowType.ADMIN_USER_PASSWORD_AUTH,
+          AuthParameters: {
+            USERNAME: email,
+            PASSWORD: password,
+          },
+        });
+        response = await client.send(adminCommand);
+      } catch (adminError) {
+        console.warn('AdminInitiateAuth falló, continuando con respuesta original:', adminError);
+        // Continuar con la respuesta original que tiene el desafío MFA_SETUP
+      }
+    }
+
+    console.log('Login response:', {
+      hasAuthenticationResult: !!response.AuthenticationResult,
+      hasChallenge: !!response.ChallengeName,
+      challengeName: response.ChallengeName,
+      session: response.Session ? 'present' : 'missing',
+    });
+
+    // Si hay un desafío (MFA, cambio de contraseña, etc.), manejar según el tipo
+    if (response.ChallengeName) {
+      if (response.ChallengeName === 'NEW_PASSWORD_REQUIRED') {
+        // Devolver la sesión para que el frontend pueda responder al desafío
+        return {
+          challengeName: 'NEW_PASSWORD_REQUIRED',
+          session: response.Session || '',
+          message: 'Se requiere cambiar la contraseña temporal',
+        };
+      }
+      if (response.ChallengeName === 'MFA_SETUP') {
+        // Si MFA está configurado como obligatorio, necesitamos responder al desafío
+        // Opción 1: Responder con SMS_MFA_CODE (si SMS está configurado) - no aplica aquí
+        // Opción 2: Si MFA es opcional, podemos saltar el setup usando AdminInitiateAuth
+        // Por ahora, devolvemos error informativo con instrucciones
+        throw new Error(`MFA_SETUP requerido. El User Pool tiene MFA configurado como obligatorio. Opciones: 1) Cambiar MFA a "OPTIONAL" en Cognito, o 2) Configurar MFA primero usando /auth/mfa/setup con la sesión proporcionada.`);
+      }
+      if (response.ChallengeName === 'SOFTWARE_TOKEN_MFA') {
+        throw new Error('MFA requerido. Usa el endpoint /auth/mfa/respond con el código de tu app.');
+      }
+      throw new Error(`Desafío requerido: ${response.ChallengeName}. Sesión: ${response.Session || 'no disponible'}`);
+    }
 
     if (!response.AuthenticationResult) {
-      throw new Error('No se recibió token de autenticación');
+      console.error('Login failed - no AuthenticationResult:', JSON.stringify(response, null, 2));
+      throw new Error('No se recibió token de autenticación. Revisa la configuración del App Client o que el usuario esté confirmado.');
     }
 
     const { AccessToken, RefreshToken, IdToken, ExpiresIn } = response.AuthenticationResult;
@@ -344,8 +401,10 @@ export async function adminCreateUser(params: {
     throw new Error('COGNITO_USER_POOL_ID no está configurado');
   }
 
-  // Generar contraseña temporal si no se proporciona
-  const tempPassword = temporaryPassword || generateTemporaryPassword();
+  // Generar contraseña temporal única (máximo 3 intentos)
+  let tempPassword = temporaryPassword;
+  let attempts = 0;
+  const maxAttempts = 3;
 
   try {
     const attributes: Array<{ Name: string; Value: string }> = [
@@ -360,40 +419,66 @@ export async function adminCreateUser(params: {
       attributes.push({ Name: 'custom:orgId', Value: orgId });
     }
 
-    const createCommand = new AdminCreateUserCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      UserAttributes: attributes,
-      TemporaryPassword: tempPassword,
-      MessageAction: 'SUPPRESS', // No enviar email automático, se manejará manualmente
-    });
+    // Intentar crear usuario con diferentes contraseñas si falla
+    while (attempts < maxAttempts) {
+      if (!tempPassword) {
+        tempPassword = generateTemporaryPassword();
+      }
 
-    const createResponse = await client.send(createCommand);
+      try {
+        const createCommand = new AdminCreateUserCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: email,
+          UserAttributes: attributes,
+          TemporaryPassword: tempPassword,
+          MessageAction: 'SUPPRESS', // No enviar email automático, se manejará manualmente
+        });
 
-    if (!createResponse.User?.Username) {
-      throw new Error('No se pudo crear el usuario');
+        const createResponse = await client.send(createCommand);
+
+        if (!createResponse.User?.Username) {
+          throw new Error('No se pudo crear el usuario');
+        }
+
+        // Establecer la contraseña como permanente (no requiere cambio en primer login)
+        // Pero marcamos que debe cambiarla después del primer login
+        const setPasswordCommand = new AdminSetUserPasswordCommand({
+          UserPoolId: USER_POOL_ID,
+          Username: email,
+          Password: tempPassword,
+          Permanent: false, // Requiere cambio en primer login
+        });
+
+        await client.send(setPasswordCommand);
+
+        return {
+          userId: createResponse.User.Username,
+          temporaryPassword: tempPassword,
+        };
+      } catch (createError: unknown) {
+        if (createError instanceof Error) {
+          // Si el error es de contraseña duplicada, generar una nueva e intentar de nuevo
+          if (createError.name === 'InvalidPasswordException' && createError.message.includes('previously been used')) {
+            attempts++;
+            tempPassword = undefined; // Forzar nueva generación
+            console.log(`Intento ${attempts}: Contraseña duplicada, generando nueva...`);
+            if (attempts >= maxAttempts) {
+              throw new Error('No se pudo generar una contraseña única después de varios intentos');
+            }
+            continue; // Reintentar
+          }
+          
+          if (createError.name === 'UsernameExistsException') {
+            throw new Error('El email ya está registrado');
+          }
+        }
+        throw createError;
+      }
     }
 
-    // Establecer la contraseña como permanente (no requiere cambio en primer login)
-    // Pero marcamos que debe cambiarla después del primer login
-    const setPasswordCommand = new AdminSetUserPasswordCommand({
-      UserPoolId: USER_POOL_ID,
-      Username: email,
-      Password: tempPassword,
-      Permanent: false, // Requiere cambio en primer login
-    });
-
-    await client.send(setPasswordCommand);
-
-    return {
-      userId: createResponse.User.Username,
-      temporaryPassword: tempPassword,
-    };
+    throw new Error('No se pudo crear el usuario después de varios intentos');
   } catch (error: unknown) {
     if (error instanceof Error) {
-      if (error.name === 'UsernameExistsException') {
-        throw new Error('El email ya está registrado');
-      }
       throw error;
     }
     throw new Error('Error desconocido al crear usuario');
@@ -469,10 +554,10 @@ export async function updateUserAttributes(
 }
 
 /**
- * Genera una contraseña temporal segura
+ * Genera una contraseña temporal segura y única
  */
 function generateTemporaryPassword(): string {
-  const length = 12;
+  const length = 16; // Aumentar longitud para más variabilidad
   const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
   let password = '';
   
@@ -482,13 +567,19 @@ function generateTemporaryPassword(): string {
   password += '0123456789'[Math.floor(Math.random() * 10)];
   password += '!@#$%^&*'[Math.floor(Math.random() * 8)];
   
-  // Completar el resto
-  for (let i = password.length; i < length; i++) {
+  // Agregar timestamp y random para unicidad
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  password += timestamp.substring(timestamp.length - 4);
+  password += random.substring(0, 4);
+  
+  // Completar el resto si es necesario
+  while (password.length < length) {
     password += charset[Math.floor(Math.random() * charset.length)];
   }
   
   // Mezclar los caracteres
-  return password.split('').sort(() => Math.random() - 0.5).join('');
+  return password.split('').sort(() => Math.random() - 0.5).join('').substring(0, length);
 }
 
 /**
@@ -707,6 +798,88 @@ export async function setMFAPreference(
       throw error;
     }
     throw new Error('Error desconocido al establecer preferencia de MFA');
+  }
+}
+
+/**
+ * Responde al desafío NEW_PASSWORD_REQUIRED cambiando la contraseña temporal
+ */
+export async function respondToNewPasswordChallenge(
+  email: string,
+  session: string,
+  newPassword: string
+): Promise<AuthResult> {
+  if (!email || !session || !newPassword) {
+    throw new Error('Email, session y newPassword son requeridos');
+  }
+
+  if (newPassword.length < 8) {
+    throw new Error('La nueva contraseña debe tener al menos 8 caracteres');
+  }
+
+  if (!CLIENT_ID) {
+    throw new Error('COGNITO_CLIENT_ID no está configurado');
+  }
+
+  try {
+    const command = new RespondToAuthChallengeCommand({
+      ClientId: CLIENT_ID,
+      ChallengeName: 'NEW_PASSWORD_REQUIRED',
+      Session: session,
+      ChallengeResponses: {
+        USERNAME: email,
+        NEW_PASSWORD: newPassword,
+      },
+    });
+
+    const response = await client.send(command);
+
+    if (!response.AuthenticationResult) {
+      throw new Error('No se recibió token de autenticación después del cambio de contraseña');
+    }
+
+    const { AccessToken, RefreshToken, IdToken, ExpiresIn } = response.AuthenticationResult;
+
+    if (!AccessToken || !IdToken) {
+      throw new Error('Tokens incompletos');
+    }
+
+    // Obtener información del usuario
+    const userCommand = new GetUserCommand({ AccessToken });
+    const userResponse = await client.send(userCommand);
+
+    const userAttributes = userResponse.UserAttributes || [];
+    const emailAttr = userAttributes.find((attr) => attr.Name === 'email');
+    const firstNameAttr = userAttributes.find((attr) => attr.Name === 'given_name');
+    const lastNameAttr = userAttributes.find((attr) => attr.Name === 'family_name');
+    const roleAttr = userAttributes.find((attr) => attr.Name === 'custom:role');
+    const orgIdAttr = userAttributes.find((attr) => attr.Name === 'custom:orgId');
+
+    return {
+      accessToken: AccessToken,
+      refreshToken: RefreshToken || '',
+      idToken: IdToken,
+      expiresIn: ExpiresIn || 3600,
+      user: {
+        id: userResponse.Username || email,
+        email: emailAttr?.Value || email,
+        firstName: firstNameAttr?.Value,
+        lastName: lastNameAttr?.Value,
+        role: (roleAttr?.Value as UserRole) || 'student',
+        orgId: orgIdAttr?.Value,
+      },
+    };
+  } catch (error: unknown) {
+    if (error instanceof Error) {
+      if (error.name === 'InvalidPasswordException') {
+        throw new Error('La nueva contraseña no cumple los requisitos');
+      }
+      if (error.name === 'NotAuthorizedException') {
+        throw new Error('Sesión inválida o expirada');
+      }
+      throw error;
+    }
+    throw new Error('Error desconocido al cambiar contraseña temporal');
   }
 }
 

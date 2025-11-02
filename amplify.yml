@@ -14,6 +14,10 @@ frontend:
       commands:
         - cd frontend
         - npm run build
+  environmentVariables:
+    VITE_API_URL: https://unfepih103.execute-api.us-east-1.amazonaws.com/dev
+    VITE_COGNITO_USER_POOL_ID: us-east-1_gY5JpRMyV
+    VITE_COGNITO_CLIENT_ID: 55hal9q6ogn0orhutff3tbohsv
   artifacts:
     baseDirectory: frontend/dist
     files:

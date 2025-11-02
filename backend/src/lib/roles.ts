@@ -107,3 +107,4 @@ export function getRolePermissions(role: UserRole | string): Permission[] {
   return ROLE_PERMISSIONS[userRole] || [];
 }
 
+

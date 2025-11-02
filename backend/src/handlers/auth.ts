@@ -14,6 +14,7 @@ import {
   verifySoftwareToken,
   setMFAPreference,
   respondToMFAChallenge,
+  respondToNewPasswordChallenge,
 } from '../lib/cognito';
 import { requireRole, extractToken, forbiddenResponse } from '../lib/authorization';
 import { canCreateUsers } from '../lib/roles';
@@ -90,6 +91,15 @@ export async function login(event: LambdaEvent): Promise<LambdaResponse> {
       password: body.password,
     });
 
+    // Si hay un desafío NEW_PASSWORD_REQUIRED, devolver la información del desafío
+    if (authResult.challengeName === 'NEW_PASSWORD_REQUIRED') {
+      return successResponse({
+        challengeName: 'NEW_PASSWORD_REQUIRED',
+        session: authResult.session,
+        message: 'Se requiere cambiar la contraseña temporal',
+      });
+    }
+
     return successResponse(authResult);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'Unknown error';
@@ -152,11 +162,21 @@ export async function logout(event: LambdaEvent): Promise<LambdaResponse> {
 export async function createUser(event: LambdaEvent): Promise<LambdaResponse> {
   try {
     // Verificar que el usuario tenga permisos de admin
+    const token = extractToken(event);
+    if (!token) {
+      return errorResponse('Authorization header es requerido', 401);
+    }
+
+    console.log('Token recibido, longitud:', token.length, 'tipo (guessing):', token.startsWith('eyJ') ? 'JWT' : 'unknown');
+
     const user = await requireRole(event, ['superadmin', 'admin']);
     
     if (!user) {
+      console.error('Usuario no autorizado. Token válido pero sin rol admin/superadmin');
       return forbiddenResponse('Solo administradores pueden crear usuarios');
     }
+
+    console.log('Usuario autorizado para crear usuarios:', { email: user.email, role: user.role });
 
     if (!canCreateUsers(user.role)) {
       return forbiddenResponse('No tienes permisos para crear usuarios');
@@ -299,7 +319,6 @@ export async function forgotPasswordHandler(event: LambdaEvent): Promise<LambdaR
       message: 'Se ha enviado un código de recuperación a tu correo electrónico',
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Unknown error';
     // No revelar si el usuario existe o no por seguridad
     return successResponse({
       message: 'Si el email existe, se ha enviado un código de recuperación',
@@ -443,6 +462,39 @@ export async function respondMFA(event: LambdaEvent): Promise<LambdaResponse> {
     const message = error instanceof Error ? error.message : 'Unknown error';
     const statusCode = message.includes('inválido') ? 401 : 400;
     return errorResponse('Error al responder MFA: ' + message, statusCode);
+  }
+}
+
+/**
+ * Responde al desafío NEW_PASSWORD_REQUIRED durante el login
+ * POST /auth/respond-new-password
+ */
+export async function respondNewPassword(event: LambdaEvent): Promise<LambdaResponse> {
+  try {
+    const body = parseJsonBody(event.body) as {
+      email: string;
+      session: string;
+      newPassword: string;
+    };
+
+    if (!body.email || !body.session || !body.newPassword) {
+      return errorResponse('Email, session y newPassword son requeridos', 400);
+    }
+
+    if (body.newPassword.length < 8) {
+      return errorResponse('La nueva contraseña debe tener al menos 8 caracteres', 400);
+    }
+
+    const authResult = await respondToNewPasswordChallenge(
+      body.email,
+      body.session,
+      body.newPassword
+    );
+
+    return successResponse(authResult);
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'Unknown error';
+    return errorResponse('Error al cambiar contraseña temporal: ' + message, 400);
   }
 }
 

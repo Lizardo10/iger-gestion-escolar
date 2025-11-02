@@ -1,31 +1,56 @@
 import { useState, useEffect } from 'react';
 import { paymentsService } from '../services/payments';
+import { useAuth } from '../hooks/useAuth';
 import type { Payment } from '../types';
 
-const MOCK_ORG_ID = 'org-1';
-const MOCK_STUDENT_ID = 'student-1';
-
 export function Payments() {
+  const { user } = useAuth();
   const [invoices, setInvoices] = useState<Payment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    hasMore: boolean;
+    lastKey?: string;
+  }>({ page: 1, limit: 20, hasMore: false });
+
+  const orgId = user?.orgId || 'default-org';
 
   useEffect(() => {
     loadInvoices();
-  }, []);
+  }, [orgId]);
 
-  const loadInvoices = async () => {
+  const loadInvoices = async (page = 1, lastKey?: string) => {
     try {
       setLoading(true);
       setError('');
-      const data = await paymentsService.list({
-        orgId: MOCK_ORG_ID,
-      });
+      
+      const queryParams: any = {
+        orgId,
+        page,
+        limit: pagination.limit,
+      };
+      
+      if (lastKey) {
+        queryParams.lastKey = lastKey;
+      }
+
+      const data = await paymentsService.list(queryParams);
       setInvoices(data.invoices || []);
-    } catch (err) {
+      
+      if (data.pagination) {
+        setPagination({
+          page: data.pagination.page || page,
+          limit: data.pagination.limit || 20,
+          hasMore: data.pagination.hasMore || false,
+          lastKey: data.pagination.lastKey,
+        });
+      }
+    } catch (err: any) {
       console.error('Error loading invoices:', err);
-      setError('No se pudieron cargar las facturas');
-      // Por ahora, usa datos mock si hay error
+      const errorMessage = err?.response?.data?.error || err?.message || 'No se pudieron cargar las facturas';
+      setError(errorMessage);
       setInvoices([]);
     } finally {
       setLoading(false);
@@ -40,11 +65,28 @@ export function Payments() {
     if (invoice.status !== 'pending') return;
 
     try {
-      const result = await paymentsService.createPayPalOrder(MOCK_ORG_ID, invoice.id);
-      window.open(result.approvalUrl, '_blank');
-    } catch (err) {
+      const result = await paymentsService.createPayPalOrder(orgId, invoice.id);
+      if (result.approvalUrl) {
+        window.open(result.approvalUrl, '_blank');
+      } else {
+        alert('No se pudo obtener la URL de pago');
+      }
+    } catch (err: any) {
       console.error('Error creating PayPal order:', err);
-      alert('Error al procesar el pago');
+      const errorMessage = err?.response?.data?.error || err?.message || 'Error al procesar el pago';
+      alert(errorMessage);
+    }
+  };
+
+  const handleNextPage = () => {
+    if (pagination.hasMore && pagination.lastKey) {
+      loadInvoices(pagination.page + 1, pagination.lastKey);
+    }
+  };
+
+  const handlePrevPage = () => {
+    if (pagination.page > 1) {
+      loadInvoices(pagination.page - 1);
     }
   };
 
@@ -168,6 +210,31 @@ export function Payments() {
       {invoices.length === 0 && !loading && (
         <div className="card text-center py-12">
           <p className="text-gray-600">No hay facturas. ¡Crea tu primera factura!</p>
+        </div>
+      )}
+
+      {/* Paginación */}
+      {!loading && invoices.length > 0 && (
+        <div className="mt-6 flex justify-between items-center">
+          <div className="text-sm text-gray-600">
+            Página {pagination.page} - Mostrando {invoices.length} facturas
+          </div>
+          <div className="flex gap-2">
+            <button
+              onClick={handlePrevPage}
+              disabled={pagination.page === 1}
+              className="px-4 py-2 text-sm border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Anterior
+            </button>
+            <button
+              onClick={handleNextPage}
+              disabled={!pagination.hasMore}
+              className="px-4 py-2 text-sm border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
       )}
     </div>
