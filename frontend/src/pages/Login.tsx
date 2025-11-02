@@ -55,8 +55,11 @@ export function Login() {
       await new Promise(resolve => setTimeout(resolve, 200));
       
       // Verificar que realmente está autenticado antes de navegar
-      const authService = await import('../lib/auth');
-      if (!authService.AuthService.isAuthenticated()) {
+      // Esperar un poco más para asegurar propagación completa
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Verificar usando AuthService directamente
+      if (!AuthService.isAuthenticated()) {
         console.error('❌ Error: Login exitoso pero no está autenticado');
         setError('Error al guardar la sesión. Por favor intenta nuevamente.');
         return;
