@@ -293,7 +293,7 @@ export class AuthService {
    * Obtiene el usuario actual
    */
   static getUser(): AuthState['user'] {
-    // Inicializar sincrónamente si no está inicializado
+    // Inicializar sincrónicamente si no está inicializado
     if (!this.initialized) {
       this.initSync();
     }
@@ -304,7 +304,7 @@ export class AuthService {
    * Obtiene el token de acceso
    */
   static getToken(): string | null {
-    // Inicializar sincrónamente si no está inicializado
+    // Inicializar sincrónicamente si no está inicializado
     if (!this.initialized) {
       this.initSync();
     }
@@ -313,12 +313,17 @@ export class AuthService {
 
   /**
    * Verifica si el usuario está autenticado
+   * IMPORTANTE: Solo retorna true si el estado está inicializado Y autenticado
    */
   static isAuthenticated(): boolean {
-    // Inicializar sincrónamente si no está inicializado
+    // Si no está inicializado, NO marcar como autenticado
+    // initSync() leerá los datos pero NO los marcará como autenticados
     if (!this.initialized) {
       this.initSync();
+      // CRÍTICO: Después de initSync, aún NO está autenticado hasta que init() valide
+      return false;
     }
+    // Solo retornar true si está inicializado Y marcado como autenticado
     return this.state.isAuthenticated;
   }
 
@@ -383,7 +388,7 @@ export class AuthService {
    * Obtiene el estado completo
    */
   static getState(): AuthState {
-    // Inicializar sincrónamente si no está inicializado
+    // Inicializar sincrónicamente si no está inicializado
     if (!this.initialized) {
       this.initSync();
     }
@@ -398,19 +403,6 @@ export class AuthService {
     return () => {
       this.listeners.delete(listener);
     };
-  }
-
-  /**
-   * Guarda el estado en localStorage
-   */
-  private static saveState(): void {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        token: this.state.token,
-        user: this.state.user,
-      })
-    );
   }
 
   /**
@@ -471,6 +463,3 @@ export class AuthService {
     return roles.includes(this.state.user?.role || '');
   }
 }
-
-
-
