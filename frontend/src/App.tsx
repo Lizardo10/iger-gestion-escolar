@@ -28,64 +28,25 @@ function App() {
           </ProtectedRoute>
         }
       >
-        <Route 
-          index 
-          element={
-            <ProtectedRoute>
-              <Navigate to="/dashboard" replace />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="dashboard" 
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="students" 
-          element={
-            <ProtectedRoute>
-              <Students />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="tasks" 
-          element={
-            <ProtectedRoute>
-              <Tasks />
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="events" 
-          element={
-            <ProtectedRoute>
-              <Events />
-            </ProtectedRoute>
-          } 
-        />
+        <Route index element={<Navigate to="/dashboard" replace />} />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="students" element={<Students />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="events" element={<Events />} />
         <Route
           path="payments"
           element={
-            <ProtectedRoute>
-              <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
-                <Payments />
-              </RoleProtectedRoute>
-            </ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
+              <Payments />
+            </RoleProtectedRoute>
           }
         />
         <Route
           path="attendance"
           element={
-            <ProtectedRoute>
-              <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
-                <Attendance />
-              </RoleProtectedRoute>
-            </ProtectedRoute>
+            <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
+              <Attendance />
+            </RoleProtectedRoute>
           }
         />
       </Route>

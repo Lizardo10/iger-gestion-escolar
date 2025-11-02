@@ -8,6 +8,8 @@ interface AuthState {
 }
 
 const AUTH_STORAGE_KEY = 'iger_auth_state';
+const AUTH_VERSION_KEY = 'iger_auth_version';
+const CURRENT_AUTH_VERSION = '2.0.0'; // Incrementar si cambia el formato
 
 export class AuthService {
   private static state: AuthState = {
@@ -19,6 +21,74 @@ export class AuthService {
 
   private static listeners: Set<() => void> = new Set();
   private static initialized = false;
+
+  /**
+   * Limpia todo el estado de autenticación y caché
+   */
+  static clearAll(): void {
+    try {
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+      localStorage.removeItem(AUTH_VERSION_KEY);
+      this.state.user = null;
+      this.state.token = null;
+      this.state.isAuthenticated = false;
+      this.initialized = false;
+      this.notifyListeners();
+      console.log('Auth state cleared successfully');
+    } catch (error) {
+      console.error('Error clearing auth state:', error);
+    }
+  }
+
+  /**
+   * Valida y limpia datos corruptos o de versión antigua
+   */
+  private static validateAndCleanStorage(): void {
+    try {
+      const storedVersion = localStorage.getItem(AUTH_VERSION_KEY);
+      
+      // Si la versión no coincide, limpiar todo
+      if (storedVersion !== CURRENT_AUTH_VERSION) {
+        console.warn('Auth version mismatch, clearing old data');
+        this.clearAll();
+        localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+        return;
+      }
+
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!stored) return;
+
+      try {
+        const parsed = JSON.parse(stored);
+        
+        // Validar estructura básica
+        if (!parsed || typeof parsed !== 'object') {
+          throw new Error('Invalid stored data structure');
+        }
+
+        // Si tiene token pero no user, limpiar (datos incompletos)
+        if (parsed.token && !parsed.user) {
+          console.warn('Incomplete auth data found, clearing');
+          this.clearAll();
+          return;
+        }
+
+        // Si tiene user pero no token, limpiar (datos incompletos)
+        if (parsed.user && !parsed.token) {
+          console.warn('Incomplete auth data found, clearing');
+          this.clearAll();
+          return;
+        }
+
+      } catch (parseError) {
+        console.error('Corrupted auth data found, clearing:', parseError);
+        this.clearAll();
+      }
+    } catch (error) {
+      console.error('Error validating storage:', error);
+      this.clearAll();
+    }
+  }
 
   /**
    * Inicializa el estado de forma síncrona (para lectura inicial)
@@ -63,6 +133,9 @@ export class AuthService {
     if (this.initialized && this.state.isAuthenticated) {
       return;
     }
+
+    // Validar y limpiar datos corruptos antes de inicializar
+    this.validateAndCleanStorage();
 
     this.state.isLoading = true;
     this.notifyListeners();
@@ -139,6 +212,8 @@ export class AuthService {
 
       // Guardar tokens completos
       this.saveStateWithTokens(result);
+      // Guardar versión
+      localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
       this.notifyListeners();
 
       return result;
@@ -243,6 +318,8 @@ export class AuthService {
         idToken: result.idToken || '',
         user: this.state.user!,
       });
+      // Guardar versión
+      localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
 
       // Notificar a los listeners que el estado cambió
       this.notifyListeners();
@@ -296,15 +373,37 @@ export class AuthService {
    * Guarda el estado con todos los tokens (para login)
    */
   private static saveStateWithTokens(result: AuthResult): void {
-    localStorage.setItem(
-      AUTH_STORAGE_KEY,
-      JSON.stringify({
-        token: result.accessToken,
-        refreshToken: result.refreshToken,
-        idToken: result.idToken,
-        user: result.user,
-      })
-    );
+    try {
+      localStorage.setItem(
+        AUTH_STORAGE_KEY,
+        JSON.stringify({
+          token: result.accessToken,
+          refreshToken: result.refreshToken,
+          idToken: result.idToken,
+          user: result.user,
+        })
+      );
+      localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+    } catch (error) {
+      console.error('Error saving auth state:', error);
+      // Si hay error guardando, podría ser que localStorage está lleno
+      // Intentar limpiar y guardar de nuevo
+      try {
+        localStorage.removeItem(AUTH_STORAGE_KEY);
+        localStorage.setItem(
+          AUTH_STORAGE_KEY,
+          JSON.stringify({
+            token: result.accessToken,
+            refreshToken: result.refreshToken,
+            idToken: result.idToken,
+            user: result.user,
+          })
+        );
+        localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+      } catch (retryError) {
+        console.error('Error retrying save auth state:', retryError);
+      }
+    }
   }
 
   /**

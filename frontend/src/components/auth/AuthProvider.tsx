@@ -13,6 +13,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
+    // Limpiar cualquier caché problemático al iniciar
+    // Verificar si hay un parámetro de limpieza en la URL
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('clearCache') === 'true') {
+      console.log('Clearing auth cache from URL parameter');
+      AuthService.clearAll();
+      // Remover el parámetro de la URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+
     // Inicializar AuthService una sola vez al montar
     AuthService.init()
       .then(() => {
