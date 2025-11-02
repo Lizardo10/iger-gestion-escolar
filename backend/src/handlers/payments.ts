@@ -3,11 +3,10 @@ import { successResponse, errorResponse, parseJsonBody, generateId, getCurrentTi
 import { DynamoDBService } from '../lib/dynamodb';
 import { requirePermission, unauthorizedResponse, forbiddenResponse } from '../lib/authorization';
 // PayPal SDK - implementación simplificada para ejemplo
-async function createPayPalOrderAPI(amount: number, invoiceId: string) {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _clientId = process.env.PAYPAL_CLIENT_ID || '';
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const _clientSecret = process.env.PAYPAL_SECRET || '';
+async function createPayPalOrderAPI(_amount: number, invoiceId: string) {
+  // Variables reservadas para futura implementación de PayPal
+  void process.env.PAYPAL_CLIENT_ID;
+  void process.env.PAYPAL_SECRET;
   const mode = process.env.PAYPAL_MODE || 'sandbox';
   const baseUrl = mode === 'production' 
     ? 'https://api.paypal.com' 
@@ -240,7 +239,7 @@ export async function listInvoices(event: LambdaEvent): Promise<LambdaResponse> 
       return forbiddenResponse('No tienes permisos para ver facturas de esta organización');
     }
 
-    const invoices: Invoice[] = [];
+    let invoices: Invoice[] = [];
     let lastEvaluatedKey: Record<string, unknown> | undefined = undefined;
     let totalScanned = 0;
 

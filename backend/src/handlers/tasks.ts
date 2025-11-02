@@ -12,8 +12,8 @@ export async function list(event: LambdaEvent): Promise<LambdaResponse> {
     }
 
     const { classId } = event.queryStringParameters || {};
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const _orgId = event.queryStringParameters?.orgId;
+    // Variable reservada para futura funcionalidad multi-org
+    void event.queryStringParameters?.orgId;
     const limit = Math.min(parseInt(event.queryStringParameters?.limit || '20', 10), 100);
     const nextToken = event.queryStringParameters?.nextToken || null;
 

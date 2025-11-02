@@ -102,10 +102,12 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     });
 
     const orgId = body.orgId || event.queryStringParameters?.orgId;
-    const { title, description, startDate, endDate, date, type, attendees, location } = body;
+    const { title, description, startDate, endDate, type, attendees, location } = body;
+    // Mantener compatibilidad con API antigua que usa 'date'
+    const legacyDate = (body as Record<string, unknown>).date as string | undefined;
 
     // Log para debug
-    console.log('Event data after parsing:', { orgId, title, date, startDate, endDate, type });
+    console.log('Event data after parsing:', { orgId, title, legacyDate, startDate, endDate, type });
 
     if (!orgId || !title || !type) {
       return errorResponse('Campos requeridos: orgId, title, type', 400);
@@ -119,8 +121,8 @@ export async function create(event: LambdaEvent): Promise<LambdaResponse> {
     }
 
     // Si viene 'date' (formato frontend), convertir a startDate/endDate
-    const finalStartDate = startDate || date;
-    const finalEndDate = endDate || date;
+    const finalStartDate = startDate || legacyDate;
+    const finalEndDate = endDate || legacyDate;
 
     if (!finalStartDate || !finalEndDate) {
       return errorResponse('Se requiere "date" o ambos "startDate" y "endDate"', 400);

@@ -1,7 +1,7 @@
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
 
-export interface LambdaEvent extends APIGatewayProxyEvent {
-  requestContext: {
+export interface LambdaEvent extends Omit<APIGatewayProxyEvent, 'requestContext'> {
+  requestContext: APIGatewayProxyEvent['requestContext'] & {
     requestId: string;
     stage: string;
     httpMethod: string;
@@ -104,6 +104,21 @@ export interface OfflineOperation {
 export interface SyncRequest {
   lastSyncTimestamp: number;
   entities: string[];
+}
+
+export interface Attendance {
+  id: string;
+  classId: string;
+  date: string;
+  records: AttendanceRecord[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface AttendanceRecord {
+  studentId: string;
+  status: 'present' | 'absent' | 'late' | 'excused';
+  notes?: string;
 }
 
 export interface SyncResponse {

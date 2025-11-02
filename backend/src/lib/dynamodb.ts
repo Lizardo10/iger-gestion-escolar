@@ -1,4 +1,4 @@
-import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
+import { DynamoDBClient, ReturnValue } from '@aws-sdk/client-dynamodb';
 import {
   DynamoDBDocumentClient,
   GetCommand,
@@ -25,7 +25,7 @@ export interface DynamoDBParams {
   UpdateExpression?: string;
   ExpressionAttributeValues?: Record<string, unknown>;
   ExpressionAttributeNames?: Record<string, string>;
-  ReturnValues?: string;
+  ReturnValues?: ReturnValue;
 }
 
 export class DynamoDBService {
@@ -102,7 +102,11 @@ export class DynamoDBService {
   }
 
   static async scan(filterExpression?: string, expressionAttributeValues?: Record<string, unknown>) {
-    const params: Record<string, unknown> = {
+    const params: {
+      TableName: string;
+      FilterExpression?: string;
+      ExpressionAttributeValues?: Record<string, unknown>;
+    } = {
       TableName: TABLE_NAME,
     };
     if (filterExpression && expressionAttributeValues) {
