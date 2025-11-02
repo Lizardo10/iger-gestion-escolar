@@ -27,9 +27,21 @@ class ApiClient {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         } else if (!isAuthEndpoint) {
-          // Si no hay token y no es un endpoint de auth, rechazar la petición
-          console.warn('No token available for request:', config.url);
-          return Promise.reject(new Error('No authentication token available'));
+          // Si no hay token y no es un endpoint de auth, esperar un momento
+          // por si el token se está cargando desde localStorage
+          console.warn('No token available for request:', config.url, '- Will retry after 100ms');
+          return new Promise((resolve) => {
+            setTimeout(() => {
+              const retryToken = AuthService.getToken();
+              if (retryToken) {
+                config.headers.Authorization = `Bearer ${retryToken}`;
+                resolve(config);
+              } else {
+                console.error('Still no token available after retry:', config.url);
+                resolve(config); // Dejar que se envíe y el 401 lo maneje
+              }
+            }, 100);
+          });
         }
         return config;
       },
@@ -70,18 +82,38 @@ class ApiClient {
               originalRequest.headers.Authorization = `Bearer ${refreshed.accessToken}`;
               // Reintentar la request original
               return this.client(originalRequest);
+            } else {
+              // Si el refresh no retornó token, verificar si hay token válido
+              const currentToken = AuthService.getToken();
+              if (currentToken) {
+                // Si hay un token actual, intentar usarlo
+                originalRequest.headers.Authorization = `Bearer ${currentToken}`;
+                return this.client(originalRequest);
+              }
             }
           } catch (refreshError) {
-            // Si el refresh falla, entonces hacer logout
+            // Si el refresh falla, verificar si realmente es un error crítico
+            const errorMessage = refreshError instanceof Error ? refreshError.message : String(refreshError);
             console.error('Error refreshing token:', refreshError);
-            await AuthService.logout();
-            window.location.href = '/login';
+            
+            // Solo hacer logout si es un error crítico (token expirado, inválido)
+            // No hacer logout si es un error de red o temporal
+            if (errorMessage.includes('expired') || 
+                errorMessage.includes('invalid') || 
+                errorMessage.includes('No se pudo refrescar')) {
+              await AuthService.logout();
+              window.location.href = '/login';
+            }
             return Promise.reject(refreshError);
           }
 
-          // Si llegamos aquí, el refresh no funcionó, hacer logout
-          await AuthService.logout();
-          window.location.href = '/login';
+          // Solo hacer logout si realmente no hay token válido
+          const currentToken = AuthService.getToken();
+          if (!currentToken) {
+            console.error('No valid token available, logging out');
+            await AuthService.logout();
+            window.location.href = '/login';
+          }
         }
 
         return Promise.reject(error);

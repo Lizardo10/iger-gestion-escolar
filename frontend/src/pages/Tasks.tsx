@@ -24,6 +24,14 @@ export function Tasks() {
       setNextToken(response.nextToken);
     } catch (error) {
       console.error('Error cargando tareas:', error);
+      
+      // Si es un error de autenticación, NO hacer logout aquí
+      // El interceptor de API lo manejará
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      if (errorMessage.includes('No authentication token') || errorMessage.includes('401')) {
+        console.warn('Error de autenticación al cargar tareas - el interceptor lo manejará');
+      }
+      
       if (reset) setTasks([]);
     } finally {
       setLoading(false);
