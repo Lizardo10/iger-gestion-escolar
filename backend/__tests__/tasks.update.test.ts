@@ -1,5 +1,20 @@
 import { update as updateTask } from '../src/handlers/tasks';
 
+// Mock de authorization
+jest.mock('../src/lib/authorization', () => ({
+  requirePermission: jest.fn(async () => ({
+    id: 'user-123',
+    email: 'test@example.com',
+    role: 'teacher',
+    orgId: 'org-1',
+  })),
+  unauthorizedResponse: jest.fn(() => ({
+    statusCode: 401,
+    headers: {},
+    body: JSON.stringify({ error: 'Unauthorized' }),
+  })),
+}));
+
 // Mocks simples de DynamoDBService
 jest.mock('../src/lib/dynamodb', () => ({
   DynamoDBService: {
