@@ -92,54 +92,16 @@ export class AuthService {
 
   /**
    * Inicializa el estado de forma síncrona (para lectura inicial)
-   * IMPORTANTE: NO marca como autenticado hasta que se valide el token
+   * CRÍTICO: NO lee localStorage - solo retorna estado por defecto
    */
   private static initSync(): void {
     if (this.initialized) return;
     
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const { token, user } = parsed;
-          
-          // Validar que todos los datos necesarios estén presentes
-          if (token && user && user.email && user.role) {
-            // Guardar temporalmente pero NO marcar como autenticado todavía
-            // El método init() asíncrono validará el token antes de marcar como autenticado
-            this.state.token = token;
-            this.state.user = user;
-            // CRÍTICO: NO marcar como autenticado aquí - esperar validación
-            this.state.isAuthenticated = false;
-          } else {
-            // Datos incompletos, limpiar
-            console.warn('Auth data incomplete, clearing');
-            localStorage.removeItem(AUTH_STORAGE_KEY);
-            this.state.user = null;
-            this.state.token = null;
-            this.state.isAuthenticated = false;
-          }
-        } catch (parseError) {
-          console.error('Error parsing stored auth state:', parseError);
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-          this.state.user = null;
-          this.state.token = null;
-          this.state.isAuthenticated = false;
-        }
-      } else {
-        // No hay datos, asegurar que está deslogueado
-        this.state.user = null;
-        this.state.token = null;
-        this.state.isAuthenticated = false;
-      }
-    } catch (error) {
-      console.error('Error initializing auth sync:', error);
-      this.state.user = null;
-      this.state.token = null;
-      this.state.isAuthenticated = false;
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    }
+    // CRÍTICO: NO leer localStorage en initSync
+    // Solo establecer estado por defecto NO autenticado
+    this.state.user = null;
+    this.state.token = null;
+    this.state.isAuthenticated = false;
   }
 
   /**

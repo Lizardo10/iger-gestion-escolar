@@ -14,10 +14,11 @@ export interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  // Inicializar estado sincrónamente desde AuthService
-  const [user, setUser] = useState(() => AuthService.getUser());
-  const [isLoading, setIsLoading] = useState(() => AuthService.isLoading());
-  const [isAuthenticated, setIsAuthenticated] = useState(() => AuthService.isAuthenticated());
+  // CRÍTICO: NO inicializar desde AuthService aquí
+  // Esperar a que AuthProvider termine de inicializar
+  const [user, setUser] = useState<AuthResult['user'] | null>(null);
+  const [isLoading, setIsLoading] = useState(true); // Empieza como loading
+  const [isAuthenticated, setIsAuthenticated] = useState(false); // Empieza como NO autenticado
 
   useEffect(() => {
     // Función para actualizar el estado desde AuthService
