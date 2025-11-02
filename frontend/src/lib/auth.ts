@@ -155,91 +155,13 @@ export class AuthService {
     this.state.token = null;
     this.state.user = null;
     this.initialized = true;
-    this.notifyListeners();
-
+    this.state.isLoading = false;
+    
     // NO restaurar de localStorage automáticamente
     // Solo se autenticará después de un login explícito
     console.log('ℹ️ Inicializado sin restaurar sesión - requiere login explícito');
-
-    this.state.isLoading = true;
+    
     this.notifyListeners();
-
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      console.log('📦 Datos en localStorage:', stored ? 'Sí (validando...)' : 'No');
-      
-      if (stored) {
-        try {
-          const parsed = JSON.parse(stored);
-          const { token, user } = parsed;
-          
-          // VALIDACIÓN MUY ESTRICTA
-          const hasValidToken = token && typeof token === 'string' && token.length > 20; // JWT tokens son largos
-          const hasValidUser = user && 
-                               typeof user === 'object' && 
-                               user.email && 
-                               typeof user.email === 'string' && 
-                               user.email.includes('@') &&
-                               user.role && 
-                               typeof user.role === 'string';
-          
-          console.log('🔍 Validación:', { hasValidToken, hasValidUser });
-          
-          if (hasValidToken && hasValidUser) {
-            // Token parece válido, marcar como autenticado
-            console.log('✅ Datos válidos, marcando como autenticado');
-            this.state.token = token;
-            this.state.user = user;
-            this.state.isAuthenticated = true;
-            this.initialized = true;
-            
-            // Si tenemos refreshToken, guardarlo también (si no estaba guardado)
-            if (parsed.refreshToken) {
-              // Los tokens ya están guardados correctamente en localStorage
-              // No necesitamos hacer nada adicional aquí
-            }
-            
-            // No validamos el token aquí para evitar logout innecesario
-            // El interceptor de API manejará los 401 y refrescará automáticamente
-          } else {
-            // Si no hay token o user válidos, limpiar
-            console.warn('⚠️ Datos inválidos, limpiando localStorage');
-            localStorage.removeItem(AUTH_STORAGE_KEY);
-            this.state.token = null;
-            this.state.user = null;
-            this.state.isAuthenticated = false;
-            this.initialized = true;
-          }
-        } catch (parseError) {
-          console.error('❌ Error parsing stored auth state:', parseError);
-          // Si hay error parseando, limpiar y dejar sin autenticar
-          localStorage.removeItem(AUTH_STORAGE_KEY);
-          this.state.token = null;
-          this.state.user = null;
-          this.state.isAuthenticated = false;
-          this.initialized = true;
-        }
-      } else {
-        // No hay datos almacenados
-        console.log('ℹ️ No hay datos en localStorage, usuario no autenticado');
-        this.state.token = null;
-        this.state.user = null;
-        this.state.isAuthenticated = false;
-        this.initialized = true;
-      }
-    } catch (error) {
-      console.error('❌ Error initializing auth:', error);
-      // No hacer logout automático, solo limpiar el estado
-      this.state.user = null;
-      this.state.token = null;
-      this.state.isAuthenticated = false;
-      this.initialized = true;
-      localStorage.removeItem(AUTH_STORAGE_KEY);
-    } finally {
-      this.state.isLoading = false;
-      console.log('✅ AuthService.init() completado, isAuthenticated:', this.state.isAuthenticated);
-      this.notifyListeners();
-    }
   }
 
   /**
