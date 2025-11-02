@@ -3,17 +3,23 @@ import { AuthService } from './auth';
 
 const API_URL = (import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL || 'http://localhost:3000';
 
+// Log de la URL de API para debugging
+console.log('🌐 API_URL configurada:', API_URL);
+
 class ApiClient {
   private client: AxiosInstance;
 
   constructor() {
     this.client = axios.create({
       baseURL: API_URL,
-      timeout: 10000,
+      timeout: 15000, // Aumentado a 15 segundos
       headers: {
         'Content-Type': 'application/json',
       },
     });
+    
+    // Log cuando se crea el cliente
+    console.log('📡 ApiClient inicializado con baseURL:', this.client.defaults.baseURL);
 
     // Interceptor para agregar token a las requests
     this.client.interceptors.request.use(

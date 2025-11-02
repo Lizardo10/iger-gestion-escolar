@@ -16,6 +16,13 @@
   #root {
     @apply h-full w-full;
   }
+
+  /* Asegurar que el viewport sea correcto en móvil */
+  @media (max-width: 640px) {
+    html {
+      font-size: 14px;
+    }
+  }
 }
 
 @layer components {

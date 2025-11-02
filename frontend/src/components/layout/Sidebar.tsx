@@ -8,7 +8,11 @@ interface NavItem {
   roles: string[];
 }
 
-export function Sidebar() {
+interface SidebarProps {
+  onClose?: () => void;
+}
+
+export function Sidebar({ onClose }: SidebarProps) {
   const { hasAnyRole } = useAuth();
 
   const navItems: NavItem[] = [
@@ -23,13 +27,21 @@ export function Sidebar() {
   // Filtrar items según el rol del usuario
   const visibleItems = navItems.filter((item) => hasAnyRole(...item.roles));
 
+  const handleNavClick = () => {
+    // Cerrar sidebar en móvil cuando se hace click en un link
+    if (onClose && window.innerWidth < 1024) {
+      onClose();
+    }
+  };
+
   return (
-    <aside className="bg-gray-50 w-64 min-h-screen p-4 border-r">
+    <aside className="bg-gray-50 w-64 h-full p-4 border-r shadow-lg lg:shadow-none">
       <nav className="space-y-2">
         {visibleItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            onClick={handleNavClick}
             className={({ isActive }) =>
               `flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
                 isActive
@@ -38,8 +50,8 @@ export function Sidebar() {
               }`
             }
           >
-            <span>{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="text-lg">{item.icon}</span>
+            <span className="text-sm md:text-base">{item.label}</span>
           </NavLink>
         ))}
       </nav>
