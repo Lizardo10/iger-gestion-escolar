@@ -15,7 +15,31 @@ export function AuthProvider({ children }: AuthProviderProps) {
   useEffect(() => {
     console.log('🔐 AuthProvider: Inicializando autenticación...');
     
-    // Limpiar caché solo si se solicita explícitamente
+    // CRÍTICO: Validar y limpiar datos mock ANTES de inicializar
+    // Esto previene acceso no autorizado con datos de desarrollo
+    try {
+      const stored = localStorage.getItem('iger_auth_state');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        const hasMockData = (
+          parsed.token?.includes('mock') ||
+          parsed.user?.id?.includes('mock') ||
+          parsed.user?.email?.includes('mock') ||
+          !parsed.user?.email?.includes('@') ||
+          (parsed.token && parsed.token.length < 20)
+        );
+        
+        if (hasMockData) {
+          console.error('🚫 DATOS MOCK DETECTADOS EN INICIO - Limpiando todo');
+          AuthService.clearAll();
+        }
+      }
+    } catch (error) {
+      console.error('Error validando datos al inicio:', error);
+      AuthService.clearAll();
+    }
+    
+    // Limpiar caché si se solicita explícitamente
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('clearCache') === 'true') {
       console.log('🧹 Clearing auth cache from URL parameter');
@@ -24,7 +48,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // Inicializar AuthService una sola vez al montar
-    // Esto restaurará la sesión si hay datos válidos en localStorage
+    // Esto validará y limpiará datos inválidos automáticamente
     AuthService.init()
       .then(() => {
         const isAuth = AuthService.isAuthenticated();

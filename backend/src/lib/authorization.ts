@@ -31,10 +31,29 @@ export function extractToken(event: LambdaEvent): string | null {
 
 /**
  * Obtiene la información del usuario desde el token de Cognito
+ * CRÍTICO: Valida que el token sea real, no mock ni datos de desarrollo
  */
 export async function getAuthenticatedUser(accessToken: string): Promise<AuthenticatedUser | null> {
   try {
-    console.log('Validando token, longitud:', accessToken?.length || 0);
+    // CRÍTICO: Validar que el token NO sea mock
+    if (!accessToken || 
+        accessToken.includes('mock') || 
+        accessToken.includes('Mock') || 
+        accessToken.includes('MOCK') ||
+        accessToken === 'mock-token' ||
+        accessToken.length < 20) {
+      console.error('🚫 Token mock o inválido detectado:', accessToken?.substring(0, 20));
+      return null;
+    }
+
+    // Validar formato JWT (debe tener 3 partes separadas por punto)
+    const tokenParts = accessToken.split('.');
+    if (tokenParts.length !== 3) {
+      console.error('🚫 Token no tiene formato JWT válido');
+      return null;
+    }
+
+    console.log('Validando token real con Cognito, longitud:', accessToken.length);
     const command = new GetUserCommand({ AccessToken: accessToken });
     const response = await cognitoClient.send(command);
 

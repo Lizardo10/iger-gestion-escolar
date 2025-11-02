@@ -42,6 +42,7 @@ export class AuthService {
 
   /**
    * Valida y limpia datos corruptos o de versión antigua
+   * CRÍTICO: Detecta y elimina tokens mock o datos de desarrollo
    */
   private static validateAndCleanStorage(): void {
     try {
@@ -66,6 +67,29 @@ export class AuthService {
           throw new Error('Invalid stored data structure');
         }
 
+        // CRÍTICO: Detectar y eliminar tokens/datos MOCK
+        const isMockToken = parsed.token && (
+          parsed.token.includes('mock') ||
+          parsed.token.includes('Mock') ||
+          parsed.token.includes('MOCK') ||
+          parsed.token === 'mock-token' ||
+          parsed.token.length < 20 // Tokens reales de Cognito son mucho más largos
+        );
+
+        const isMockUser = parsed.user && (
+          parsed.user.id?.includes('mock') ||
+          parsed.user.id === 'mock-user-id' ||
+          parsed.user.email?.includes('mock') ||
+          !parsed.user.email?.includes('@') // Email válido debe tener @
+        );
+
+        if (isMockToken || isMockUser) {
+          console.error('🚫 DATOS MOCK DETECTADOS - Limpiando localStorage');
+          console.error('Token mock:', isMockToken, 'User mock:', isMockUser);
+          this.clearAll();
+          return;
+        }
+
         // Si tiene token pero no user, limpiar (datos incompletos)
         if (parsed.token && !parsed.user) {
           console.warn('Incomplete auth data found, clearing');
@@ -78,6 +102,16 @@ export class AuthService {
           console.warn('Incomplete auth data found, clearing');
           this.clearAll();
           return;
+        }
+
+        // Validar que el token tenga formato de JWT (tiene 3 partes separadas por punto)
+        if (parsed.token && typeof parsed.token === 'string') {
+          const tokenParts = parsed.token.split('.');
+          if (tokenParts.length !== 3) {
+            console.error('🚫 Token no tiene formato JWT válido - Limpiando');
+            this.clearAll();
+            return;
+          }
         }
 
       } catch (parseError) {
