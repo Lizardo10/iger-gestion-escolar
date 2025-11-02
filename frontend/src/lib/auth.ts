@@ -234,6 +234,7 @@ export class AuthService {
       
       // Actualizar el estado
       this.state.token = result.accessToken;
+      this.state.isAuthenticated = true; // Asegurar que sigue autenticado
       
       // Guardar los nuevos tokens (usar refreshToken del resultado o mantener el anterior si no viene)
       this.saveStateWithTokens({
@@ -242,6 +243,9 @@ export class AuthService {
         idToken: result.idToken || '',
         user: this.state.user!,
       });
+
+      // Notificar a los listeners que el estado cambió
+      this.notifyListeners();
 
       return {
         accessToken: result.accessToken,

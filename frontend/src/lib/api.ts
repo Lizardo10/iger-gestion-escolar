@@ -19,8 +19,17 @@ class ApiClient {
     this.client.interceptors.request.use(
       (config) => {
         const token = AuthService.getToken();
+        const isAuthEndpoint = config.url?.includes('/auth/login') || 
+                              config.url?.includes('/auth/register') ||
+                              config.url?.includes('/auth/forgot-password') ||
+                              config.url?.includes('/auth/confirm-forgot-password');
+        
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+        } else if (!isAuthEndpoint) {
+          // Si no hay token y no es un endpoint de auth, rechazar la petición
+          console.warn('No token available for request:', config.url);
+          return Promise.reject(new Error('No authentication token available'));
         }
         return config;
       },
@@ -41,14 +50,22 @@ class ApiClient {
 
         const originalRequest = error.config;
 
-        // Si es 401 y no es una petición de refresh, intentar refresh token
-        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+        // Si es 401 y no es una petición de refresh o login, intentar refresh token
+        const isAuthEndpoint = originalRequest.url?.includes('/auth/login') || 
+                               originalRequest.url?.includes('/auth/register') ||
+                               originalRequest.url?.includes('/auth/refresh') ||
+                               originalRequest.url?.includes('/auth/logout');
+        
+        if (error.response?.status === 401 && 
+            !originalRequest._retry && 
+            !isAuthEndpoint) {
           originalRequest._retry = true;
 
           try {
             // Intentar refrescar el token
             const refreshed = await AuthService.refreshToken();
-            if (refreshed) {
+            if (refreshed && refreshed.accessToken) {
+              // El refreshToken ya actualizó el estado interno de AuthService
               // Actualizar el token en la request original
               originalRequest.headers.Authorization = `Bearer ${refreshed.accessToken}`;
               // Reintentar la request original
