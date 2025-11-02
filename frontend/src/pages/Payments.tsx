@@ -19,6 +19,7 @@ export function Payments() {
 
   useEffect(() => {
     loadInvoices();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [orgId]);
 
   const loadInvoices = async (page = 1, lastKey?: string) => {
@@ -26,7 +27,7 @@ export function Payments() {
       setLoading(true);
       setError('');
       
-      const queryParams: any = {
+      const queryParams: Record<string, string | number> = {
         orgId,
         page,
         limit: pagination.limit,
@@ -47,9 +48,11 @@ export function Payments() {
           lastKey: data.pagination.lastKey,
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error loading invoices:', err);
-      const errorMessage = err?.response?.data?.error || err?.message || 'No se pudieron cargar las facturas';
+      const errorMessage = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (err as { message?: string })?.message || 
+                          'No se pudieron cargar las facturas';
       setError(errorMessage);
       setInvoices([]);
     } finally {
@@ -71,9 +74,11 @@ export function Payments() {
       } else {
         alert('No se pudo obtener la URL de pago');
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error('Error creating PayPal order:', err);
-      const errorMessage = err?.response?.data?.error || err?.message || 'Error al procesar el pago';
+      const errorMessage = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (err as { message?: string })?.message || 
+                          'Error al procesar el pago';
       alert(errorMessage);
     }
   };

@@ -15,6 +15,7 @@ export function Events() {
 
   useEffect(() => {
     loadEvents(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadEvents = async (reset = false) => {

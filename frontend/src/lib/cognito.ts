@@ -90,8 +90,10 @@ export class CognitoService {
           orgId: data.user.orgId,
         },
       };
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Error al iniciar sesión';
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (error as { message?: string })?.message || 
+                          'Error al iniciar sesión';
       throw new Error(errorMessage);
     }
   }
@@ -158,8 +160,10 @@ export class CognitoService {
         refreshToken: response.data.refreshToken,
         idToken: response.data.idToken,
       };
-    } catch (error: any) {
-      const errorMessage = error?.response?.data?.error || error?.message || 'Error al refrescar token';
+    } catch (error: unknown) {
+      const errorMessage = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (error as { message?: string })?.message || 
+                          'Error al refrescar token';
       throw new Error(errorMessage);
     }
   }

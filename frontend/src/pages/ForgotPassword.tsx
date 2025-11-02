@@ -17,8 +17,10 @@ export function ForgotPassword() {
     try {
       await api.post('/auth/forgot-password', { email });
       setSuccess(true);
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || err?.message || 'Error al solicitar recuperación de contraseña';
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (err as { message?: string })?.message || 
+                          'Error al solicitar recuperación de contraseña';
       setError(errorMessage);
     } finally {
       setIsLoading(false);

@@ -44,8 +44,10 @@ export function ResetPassword() {
       setTimeout(() => {
         navigate('/login');
       }, 2000);
-    } catch (err: any) {
-      const errorMessage = err?.response?.data?.error || err?.message || 'Error al restablecer contraseña';
+    } catch (err: unknown) {
+      const errorMessage = (err as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
+                          (err as { message?: string })?.message || 
+                          'Error al restablecer contraseña';
       setError(errorMessage);
     } finally {
       setIsLoading(false);

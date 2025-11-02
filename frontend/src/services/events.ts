@@ -63,7 +63,7 @@ class EventsService {
   }
 
   async create(params: CreateEventParams) {
-    const payload: any = { ...params };
+    const payload: Record<string, unknown> = { ...params };
     if (params.startDate && params.endDate) {
       delete payload.date;
     } else if (params.date) {

@@ -16,6 +16,7 @@ export function Students() {
 
   useEffect(() => {
     loadStudents(true);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const loadStudents = async (reset = false) => {

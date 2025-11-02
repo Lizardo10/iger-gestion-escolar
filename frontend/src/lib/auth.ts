@@ -102,7 +102,7 @@ export class AuthService {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          const { token, refreshToken, idToken, user } = parsed;
+          const { token, user } = parsed;
           
           // Validar que todos los datos necesarios estén presentes
           if (token && user && user.email && user.role) {

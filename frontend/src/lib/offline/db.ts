@@ -2,30 +2,34 @@
 interface DBSchema {
   [storeName: string]: {
     key: string;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     value: any;
     indexes?: { [indexName: string]: string };
   };
 }
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-interface IDBPDatabase<T = any> {
+interface IDBPDatabase {
   readonly name: string;
   readonly version: number;
   close(): void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   get<V = any>(storeName: string, key: string): Promise<V | undefined>;
-  put<V = any>(storeName: string, value: V, key?: string): Promise<any>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  put<V = any>(storeName: string, value: V, key?: string): Promise<unknown>;
   delete(storeName: string, key: string): Promise<void>;
   clear(storeName: string): Promise<void>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   transaction(stores: string[]): any;
 }
 
-declare function openDB<T = any>(
+declare function openDB(
   name: string,
   version?: number,
   options?: {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     upgrade?: (db: any) => void | Promise<void>;
   }
-): Promise<IDBPDatabase<IgerDB>>;
+): Promise<IDBPDatabase>;
 
 interface IgerDB extends DBSchema {
   cachedData: {
