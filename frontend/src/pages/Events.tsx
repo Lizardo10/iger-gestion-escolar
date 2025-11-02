@@ -1,17 +1,21 @@
 import { useState, useEffect } from 'react';
 import { eventsService } from '../services/events';
 import { EventModal } from '../components/events/EventModal';
+import { useAuth } from '../hooks/useAuth';
+import { Calendar } from '../components/events/Calendar';
 import type { Event } from '../types';
 
 export function Events() {
+  const { user, hasAnyRole } = useAuth();
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextToken, setNextToken] = useState<string | undefined>(undefined);
-  const [selectedView, setSelectedView] = useState<'list' | 'calendar'>('list');
+  const [selectedView, setSelectedView] = useState<'list' | 'calendar'>('calendar');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
 
-  const orgId = 'org-1';
+  // Usar orgId del usuario si está disponible, sino usar el default
+  const orgId = user?.orgId || 'org-1';
 
   useEffect(() => {
     loadEvents(true);
@@ -21,8 +25,39 @@ export function Events() {
   const loadEvents = async (reset = false) => {
     try {
       setLoading(true);
-      const response = await eventsService.list({ orgId, nextToken: reset ? undefined : nextToken });
-      setEvents((prev) => (reset ? (response.events || []) : [...prev, ...(response.events || [])]));
+      
+      // Filtrar eventos según el rol y datos del usuario
+      const today = new Date().toISOString().split('T')[0];
+      const response = await eventsService.list({ 
+        orgId, 
+        nextToken: reset ? undefined : nextToken,
+        from: today, // Solo eventos futuros por defecto
+      });
+      
+      let filteredEvents = response.events || [];
+      
+      // Filtrar por rol
+      if (user?.role === 'student') {
+        // Estudiantes solo ven eventos donde están en attendees o eventos públicos de su clase
+        // TODO: Filtrar por clase del estudiante cuando tengamos esa relación
+        filteredEvents = filteredEvents.filter((event) => {
+          // Ver eventos donde el estudiante está en attendees
+          return event.attendees.includes(user.id) || 
+                 // O eventos públicos (sin attendees específicos significa público)
+                 event.attendees.length === 0;
+        });
+      } else if (user?.role === 'teacher') {
+        // Profesores ven eventos donde están en attendees o eventos de su organización
+        filteredEvents = filteredEvents.filter((event) => {
+          return event.attendees.includes(user.id) || 
+                 event.attendees.length === 0;
+        });
+      } else if (hasAnyRole('superadmin', 'admin')) {
+        // Admins y superadmins ven todos los eventos
+        // No filtrar
+      }
+      
+      setEvents((prev) => (reset ? filteredEvents : [...prev, ...filteredEvents]));
       setNextToken(response.nextToken);
     } catch (error) {
       console.error('Error cargando eventos:', error);
@@ -33,6 +68,11 @@ export function Events() {
   };
 
   const handleCreate = () => {
+    // Solo permitir crear eventos si no es estudiante
+    if (user?.role === 'student') {
+      alert('Los estudiantes no pueden crear eventos');
+      return;
+    }
     setSelectedEvent(null);
     setIsModalOpen(true);
   };
@@ -116,24 +156,28 @@ export function Events() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold">Eventos</h1>
-        <div className="flex gap-2">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+        <h1 className="text-2xl md:text-3xl font-bold">
+          Eventos {user?.role === 'student' && '(Mis Eventos)'}
+        </h1>
+        <div className="flex gap-2 flex-wrap">
           <button
             onClick={() => setSelectedView('list')}
-            className={`btn ${selectedView === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn btn-sm md:btn ${selectedView === 'list' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Lista
+            📋 Lista
           </button>
           <button
             onClick={() => setSelectedView('calendar')}
-            className={`btn ${selectedView === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
+            className={`btn btn-sm md:btn ${selectedView === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
           >
-            Calendario
+            📅 Calendario
           </button>
-          <button onClick={handleCreate} className="btn btn-primary">
-            + Nuevo Evento
-          </button>
+          {user?.role !== 'student' && (
+            <button onClick={handleCreate} className="btn btn-primary btn-sm md:btn">
+              + Nuevo
+            </button>
+          )}
         </div>
       </div>
 
@@ -155,14 +199,16 @@ export function Events() {
                     {event.location && <span>📍 {event.location}</span>}
                   </div>
                 </div>
-                <div className="flex gap-2">
-                  <button onClick={() => handleEdit(event)} className="text-primary-600 hover:text-primary-800 text-sm">
-                    Editar
-                  </button>
-                  <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:text-red-800 text-sm">
-                    Eliminar
-                  </button>
-                </div>
+                {user?.role !== 'student' && (
+                  <div className="flex gap-2">
+                    <button onClick={() => handleEdit(event)} className="text-primary-600 hover:text-primary-800 text-sm">
+                      Editar
+                    </button>
+                    <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:text-red-800 text-sm">
+                      Eliminar
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -178,12 +224,14 @@ export function Events() {
       )}
 
       {selectedView === 'calendar' && (
-        <div className="card">
-          <div className="text-center py-12">
-            <p className="text-gray-600 mb-4">📅 Vista de Calendario</p>
-            <p className="text-sm text-gray-500">Vista de calendario próximamente (integración con librería de calendario)</p>
-          </div>
-        </div>
+        <Calendar 
+          events={events} 
+          onEventClick={(event) => {
+            if (user?.role !== 'student') {
+              handleEdit(event);
+            }
+          }}
+        />
       )}
 
       {events.length === 0 && !loading && (
