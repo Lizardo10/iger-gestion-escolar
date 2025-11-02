@@ -148,20 +148,27 @@ export class AuthService {
   static async init(): Promise<void> {
     console.log('🔐 AuthService.init() llamado');
     
-    // Si ya está inicializado Y autenticado, no hacer nada
+    // Si ya está inicializado Y autenticado, verificar que sigue válido
     if (this.initialized && this.state.isAuthenticated) {
-      console.log('ℹ️ Ya inicializado y autenticado, omitiendo init()');
-      return;
+      const token = this.state.token;
+      const user = this.state.user;
+      if (token && user && user.email && user.role) {
+        console.log('ℹ️ Ya inicializado y autenticado, validación OK');
+        return;
+      } else {
+        console.warn('⚠️ Estado autenticado pero datos inválidos, revalidando...');
+        this.state.isAuthenticated = false;
+        this.state.token = null;
+        this.state.user = null;
+      }
     }
 
     // CRÍTICO: Siempre empezar con estado NO autenticado
     // Esto previene acceso no autorizado durante la validación
-    const wasAuthenticated = this.state.isAuthenticated;
-    if (wasAuthenticated) {
-      console.warn('⚠️ Advertencia: Estado autenticado antes de init(), limpiando temporalmente');
-      this.state.isAuthenticated = false;
-      this.notifyListeners();
-    }
+    this.state.isAuthenticated = false;
+    this.state.token = null;
+    this.state.user = null;
+    this.notifyListeners();
 
     // Validar y limpiar datos corruptos antes de inicializar
     this.validateAndCleanStorage();
@@ -348,15 +355,16 @@ export class AuthService {
    * IMPORTANTE: Solo retorna true si el estado está inicializado Y autenticado
    */
   static isAuthenticated(): boolean {
-    // Si no está inicializado, NO marcar como autenticado
-    // initSync() leerá los datos pero NO los marcará como autenticados
+    // CRÍTICO: Si no está inicializado, SIEMPRE retornar false
+    // NO intentar leer localStorage hasta que init() valide
     if (!this.initialized) {
-      this.initSync();
-      // CRÍTICO: Después de initSync, aún NO está autenticado hasta que init() valide
+      // NO llamar a initSync() aquí - esperar a que init() complete
       return false;
     }
     // Solo retornar true si está inicializado Y marcado como autenticado
-    return this.state.isAuthenticated;
+    const result = this.state.isAuthenticated;
+    console.log('🔐 isAuthenticated() llamado:', { initialized: this.initialized, result });
+    return result;
   }
 
   /**

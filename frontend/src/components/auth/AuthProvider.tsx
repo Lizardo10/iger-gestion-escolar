@@ -11,33 +11,24 @@ interface AuthProviderProps {
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isReady, setIsReady] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // FORZAR LIMPIEZA INICIAL - Asegurar estado limpio
     console.log('🔐 AuthProvider: Inicializando autenticación...');
     
-    // Limpiar cualquier caché problemático al iniciar
-    // Verificar si hay un parámetro de limpieza en la URL
+    // CRÍTICO: Siempre empezar con NO autenticado en el estado del provider
+    setIsAuthenticated(false);
+    
+    // Limpiar cualquier caché problemático solo si se solicita explícitamente
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('clearCache') === 'true') {
       console.log('🧹 Clearing auth cache from URL parameter');
       AuthService.clearAll();
-      // Remover el parámetro de la URL
       window.history.replaceState({}, '', window.location.pathname);
     }
 
-    // CRÍTICO: Asegurar que NO está autenticado al inicio
-    // Esto previene acceso no autorizado mientras se valida
-    const initialState = AuthService.isAuthenticated();
-    console.log('🔍 Estado inicial de autenticación:', initialState);
-    
-    if (initialState) {
-      // Si está autenticado ANTES de init(), podría ser un problema
-      console.warn('⚠️ Advertencia: Estado autenticado antes de init(), forzando validación');
-    }
-
     // Inicializar AuthService una sola vez al montar
-    // Esto validará el token y marcará como autenticado solo si es válido
     AuthService.init()
       .then(() => {
         // Verificar que la autenticación se validó correctamente
@@ -51,21 +42,24 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!token || !user || !user.email || !user.role) {
             console.error('❌ Datos de autenticación inválidos, limpiando...');
             AuthService.clearAll();
+            setIsAuthenticated(false);
             setIsReady(true);
             return;
           }
           console.log('✅ Autenticación válida:', { email: user.email, role: user.role });
+          setIsAuthenticated(true);
         } else {
           console.log('ℹ️ Usuario no autenticado');
+          setIsAuthenticated(false);
         }
         
         setIsReady(true);
       })
       .catch((error) => {
         console.error('❌ Error initializing auth:', error);
-        // Asegurar que no esté autenticado si hay error
         AuthService.clearAll();
-        setIsReady(true); // Continuar incluso si hay error
+        setIsAuthenticated(false);
+        setIsReady(true);
       });
   }, []);
 
