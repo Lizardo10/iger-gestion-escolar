@@ -148,30 +148,18 @@ export class AuthService {
   static async init(): Promise<void> {
     console.log('🔐 AuthService.init() llamado');
     
-    // Si ya está inicializado Y autenticado, verificar que sigue válido
-    if (this.initialized && this.state.isAuthenticated) {
-      const token = this.state.token;
-      const user = this.state.user;
-      if (token && user && user.email && user.role) {
-        console.log('ℹ️ Ya inicializado y autenticado, validación OK');
-        return;
-      } else {
-        console.warn('⚠️ Estado autenticado pero datos inválidos, revalidando...');
-        this.state.isAuthenticated = false;
-        this.state.token = null;
-        this.state.user = null;
-      }
-    }
-
-    // CRÍTICO: Siempre empezar con estado NO autenticado
-    // Esto previene acceso no autorizado durante la validación
+    // CRÍTICO: SIEMPRE empezar con estado NO autenticado
+    // NO leer localStorage - solo marcar como inicializado
+    // Esto previene acceso no autorizado
     this.state.isAuthenticated = false;
     this.state.token = null;
     this.state.user = null;
+    this.initialized = true;
     this.notifyListeners();
 
-    // Validar y limpiar datos corruptos antes de inicializar
-    this.validateAndCleanStorage();
+    // NO restaurar de localStorage automáticamente
+    // Solo se autenticará después de un login explícito
+    console.log('ℹ️ Inicializado sin restaurar sesión - requiere login explícito');
 
     this.state.isLoading = true;
     this.notifyListeners();
