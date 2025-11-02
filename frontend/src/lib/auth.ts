@@ -18,12 +18,14 @@ export class AuthService {
   };
 
   private static listeners: Set<() => void> = new Set();
+  private static initialized = false;
 
   /**
-   * Restaura el estado de autenticación desde localStorage
+   * Inicializa el estado de forma síncrona (para lectura inicial)
    */
-  static async init(): Promise<void> {
-    this.state.isLoading = true;
+  private static initSync(): void {
+    if (this.initialized) return;
+    
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
@@ -35,6 +37,48 @@ export class AuthService {
             this.state.token = token;
             this.state.user = user;
             this.state.isAuthenticated = true;
+            this.initialized = true;
+          } else {
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+          }
+        } catch (parseError) {
+          console.error('Error parsing stored auth state:', parseError);
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+        }
+      }
+    } catch (error) {
+      console.error('Error initializing auth sync:', error);
+      this.state.user = null;
+      this.state.token = null;
+      this.state.isAuthenticated = false;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    }
+  }
+
+  /**
+   * Restaura el estado de autenticación desde localStorage
+   */
+  static async init(): Promise<void> {
+    // Si ya está inicializado, no hacer nada
+    if (this.initialized && this.state.isAuthenticated) {
+      return;
+    }
+
+    this.state.isLoading = true;
+    this.notifyListeners();
+
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const { token, refreshToken, idToken, user } = parsed;
+          
+          if (token && user) {
+            this.state.token = token;
+            this.state.user = user;
+            this.state.isAuthenticated = true;
+            this.initialized = true;
             
             // Si tenemos refreshToken pero falta en el estado guardado, restaurarlo
             if (refreshToken && !parsed.refreshToken) {
@@ -51,12 +95,19 @@ export class AuthService {
           } else {
             // Si no hay token o user, limpiar
             localStorage.removeItem(AUTH_STORAGE_KEY);
+            this.state.isAuthenticated = false;
+            this.initialized = true;
           }
         } catch (parseError) {
           console.error('Error parsing stored auth state:', parseError);
           // Si hay error parseando, limpiar y dejar sin autenticar
           localStorage.removeItem(AUTH_STORAGE_KEY);
+          this.state.isAuthenticated = false;
+          this.initialized = true;
         }
+      } else {
+        this.state.isAuthenticated = false;
+        this.initialized = true;
       }
     } catch (error) {
       console.error('Error initializing auth:', error);
@@ -64,6 +115,7 @@ export class AuthService {
       this.state.user = null;
       this.state.token = null;
       this.state.isAuthenticated = false;
+      this.initialized = true;
       localStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
       this.state.isLoading = false;
@@ -83,6 +135,7 @@ export class AuthService {
       this.state.token = result.accessToken;
       this.state.user = result.user;
       this.state.isAuthenticated = true;
+      this.initialized = true; // Marcar como inicializado
 
       // Guardar tokens completos
       this.saveStateWithTokens(result);
@@ -112,6 +165,7 @@ export class AuthService {
     this.state.user = null;
     this.state.token = null;
     this.state.isAuthenticated = false;
+    this.initialized = true; // Marcar como inicializado para evitar re-inicialización
     localStorage.removeItem(AUTH_STORAGE_KEY);
     this.notifyListeners();
   }
@@ -120,6 +174,10 @@ export class AuthService {
    * Obtiene el usuario actual
    */
   static getUser(): AuthState['user'] {
+    // Inicializar sincrónamente si no está inicializado
+    if (!this.initialized) {
+      this.initSync();
+    }
     return this.state.user;
   }
 
@@ -127,7 +185,29 @@ export class AuthService {
    * Obtiene el token de acceso
    */
   static getToken(): string | null {
+    // Inicializar sincrónamente si no está inicializado
+    if (!this.initialized) {
+      this.initSync();
+    }
     return this.state.token;
+  }
+
+  /**
+   * Verifica si el usuario está autenticado
+   */
+  static isAuthenticated(): boolean {
+    // Inicializar sincrónamente si no está inicializado
+    if (!this.initialized) {
+      this.initSync();
+    }
+    return this.state.isAuthenticated;
+  }
+
+  /**
+   * Verifica el estado de carga
+   */
+  static isLoading(): boolean {
+    return this.state.isLoading;
   }
 
   /**
@@ -175,23 +255,13 @@ export class AuthService {
   }
 
   /**
-   * Verifica si el usuario está autenticado
-   */
-  static isAuthenticated(): boolean {
-    return this.state.isAuthenticated;
-  }
-
-  /**
-   * Verifica el estado de carga
-   */
-  static isLoading(): boolean {
-    return this.state.isLoading;
-  }
-
-  /**
    * Obtiene el estado completo
    */
   static getState(): AuthState {
+    // Inicializar sincrónamente si no está inicializado
+    if (!this.initialized) {
+      this.initSync();
+    }
     return { ...this.state };
   }
 

@@ -14,21 +14,24 @@ export interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  const [user, setUser] = useState(AuthService.getUser());
-  const [isLoading, setIsLoading] = useState(true);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  // Inicializar estado sincrónamente desde AuthService
+  const [user, setUser] = useState(() => AuthService.getUser());
+  const [isLoading, setIsLoading] = useState(() => AuthService.isLoading());
+  const [isAuthenticated, setIsAuthenticated] = useState(() => AuthService.isAuthenticated());
 
   useEffect(() => {
-    const unsubscribe = AuthService.subscribe(() => {
+    // Función para actualizar el estado desde AuthService
+    const updateState = () => {
       setUser(AuthService.getUser());
       setIsLoading(AuthService.isLoading());
       setIsAuthenticated(AuthService.isAuthenticated());
-    });
+    };
 
-    // Inicializar auth
-    AuthService.init().finally(() => {
-      setIsLoading(false);
-    });
+    // Suscribirse a cambios (AuthProvider ya inicializó)
+    const unsubscribe = AuthService.subscribe(updateState);
+
+    // Actualizar estado inicial (por si acaso)
+    updateState();
 
     return unsubscribe;
   }, []);

@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Layout } from './components/layout/Layout';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
+import { AuthProvider } from './components/auth/AuthProvider';
 import { Login } from './pages/Login';
 import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
@@ -14,7 +15,8 @@ import { Attendance } from './pages/Attendance';
 
 function App() {
   return (
-    <Routes>
+    <AuthProvider>
+      <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
@@ -50,7 +52,8 @@ function App() {
       </Route>
       {/* Catch all - redirigir a login cualquier ruta no definida */}
       <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+      </Routes>
+    </AuthProvider>
   );
 }
 
