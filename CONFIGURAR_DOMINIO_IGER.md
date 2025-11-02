@@ -91,19 +91,24 @@ Value: [valor que te da Amplify]
 TTL: Automatic
 ```
 
-### Paso 4: Verificación y Propagación
+### Paso 4: Confirmar Configuración en Amplify
 
-1. Después de agregar los registros, ve a Amplify Console
-2. Confirm que has completado la configuración
-3. Amplify comenzará a:
+1. **Después de agregar los registros DNS en Namecheap:**
+   - Vuelve a AWS Amplify Console
+   - Ve a tu aplicación → **"Domains"**
+   - Click en el dominio `iger.online`
+   - Deberías ver un botón **"Verify configuration"** o **"Confirmar configuración"**
+   - Click en ese botón para confirmar que ya configuraste DNS
+
+2. **Amplify comenzará automáticamente a:**
    - ✅ Verificar propiedad del dominio
-   - ✅ Solicitar certificado SSL/TLS gratuito
+   - ✅ Solicitar certificado SSL/TLS gratuito (proceso automático)
    - ✅ Configurar CloudFront
 
 **⏱️ Tiempo estimado:**
-- Verificación: 15-30 minutos
-- Propagación DNS: 1-48 horas
-- Certificado SSL: 1-24 horas
+- Verificación DNS: 15-30 minutos
+- Certificado SSL: 1-24 horas (AWS lo solicita automáticamente)
+- Propagación DNS: 1-48 horas (depende de tu ubicación)
 
 ### Paso 5: Monitorear Estado
 
