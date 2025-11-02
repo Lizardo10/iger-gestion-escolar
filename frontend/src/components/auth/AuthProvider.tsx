@@ -11,14 +11,10 @@ interface AuthProviderProps {
  */
 export function AuthProvider({ children }: AuthProviderProps) {
   const [isReady, setIsReady] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     // FORZAR LIMPIEZA INICIAL - Asegurar estado limpio
     console.log('🔐 AuthProvider: Inicializando autenticación...');
-    
-    // CRÍTICO: Siempre empezar con NO autenticado en el estado del provider
-    setIsAuthenticated(false);
     
     // Limpiar cualquier caché problemático solo si se solicita explícitamente
     const urlParams = new URLSearchParams(window.location.search);
@@ -42,15 +38,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
           if (!token || !user || !user.email || !user.role) {
             console.error('❌ Datos de autenticación inválidos, limpiando...');
             AuthService.clearAll();
-            setIsAuthenticated(false);
             setIsReady(true);
             return;
           }
           console.log('✅ Autenticación válida:', { email: user.email, role: user.role });
-          setIsAuthenticated(true);
         } else {
           console.log('ℹ️ Usuario no autenticado');
-          setIsAuthenticated(false);
         }
         
         setIsReady(true);
@@ -58,7 +51,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       .catch((error) => {
         console.error('❌ Error initializing auth:', error);
         AuthService.clearAll();
-        setIsAuthenticated(false);
         setIsReady(true);
       });
   }, []);
