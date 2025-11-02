@@ -69,8 +69,30 @@ export function Login() {
       console.log('✅ Estado verificado, navegando a dashboard...');
       navigate('/dashboard', { replace: true });
     } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
-      console.error('❌ Error en login:', errorMessage);
+      console.error('❌ Error completo en Login:', err);
+      
+      let errorMessage = 'Error al iniciar sesión';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+        
+        // Mensajes más amigables para errores comunes
+        if (err.message.includes('CORS')) {
+          errorMessage = 'Error de conexión con el servidor. Por favor verifica la configuración.';
+        } else if (err.message.includes('timeout') || err.message.includes('ECONNABORTED')) {
+          errorMessage = 'El servidor no responde. Por favor verifica tu conexión.';
+        } else if (err.message.includes('ERR_NETWORK')) {
+          errorMessage = 'Error de conexión. Verifica tu conexión a internet.';
+        } else if (err.message.includes('401') || err.message.includes('incorrectos')) {
+          errorMessage = 'Email o contraseña incorrectos.';
+        } else if (err.message.includes('confirmado')) {
+          errorMessage = 'Por favor confirma tu email antes de iniciar sesión.';
+        }
+      } else if (typeof err === 'string') {
+        errorMessage = err;
+      }
+      
+      console.error('❌ Error final mostrado al usuario:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

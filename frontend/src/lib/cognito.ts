@@ -58,6 +58,9 @@ export class CognitoService {
    */
   static async login({ email, password }: LoginParams): Promise<AuthResult> {
     try {
+      const apiUrl = (import.meta as unknown as { env: { VITE_API_URL?: string } }).env.VITE_API_URL;
+      console.log('🔐 CognitoService.login: Iniciando login...', { email, apiUrl });
+      
       const response = await api.post<{
         accessToken: string;
         refreshToken: string;
@@ -75,7 +78,23 @@ export class CognitoService {
         password,
       });
 
+      console.log('✅ CognitoService.login: Respuesta recibida', { 
+        hasAccessToken: !!response.data.accessToken,
+        hasUser: !!response.data.user 
+      });
+
       const data = response.data;
+      
+      // Validar que la respuesta tenga todos los datos necesarios
+      if (!data.accessToken) {
+        console.error('❌ CognitoService.login: No hay accessToken en la respuesta');
+        throw new Error('Respuesta del servidor inválida: falta accessToken');
+      }
+      
+      if (!data.user || !data.user.id || !data.user.email) {
+        console.error('❌ CognitoService.login: Datos de usuario incompletos', data.user);
+        throw new Error('Respuesta del servidor inválida: datos de usuario incompletos');
+      }
       
       return {
         accessToken: data.accessToken,
@@ -91,9 +110,50 @@ export class CognitoService {
         },
       };
     } catch (error: unknown) {
-      const errorMessage = (error as { response?: { data?: { error?: string } }; message?: string })?.response?.data?.error || 
-                          (error as { message?: string })?.message || 
-                          'Error al iniciar sesión';
+      console.error('❌ CognitoService.login: Error completo', error);
+      
+      // Detectar diferentes tipos de errores
+      const axiosError = error as {
+        response?: {
+          status?: number;
+          data?: { error?: string; message?: string };
+          headers?: Record<string, string>;
+        };
+        message?: string;
+        code?: string;
+      };
+      
+      // Error de red (CORS, timeout, etc.)
+      if (axiosError.code === 'ERR_NETWORK' || axiosError.code === 'ECONNABORTED') {
+        const message = axiosError.message?.includes('timeout') 
+          ? 'El servidor no responde. Por favor verifica tu conexión.'
+          : 'Error de conexión. Verifica tu conexión a internet o que la URL del servidor sea correcta.';
+        console.error('❌ Error de red:', message);
+        throw new Error(message);
+      }
+      
+      // Error de CORS
+      if (axiosError.message?.includes('CORS') || 
+          (axiosError.response?.status === 0 && !axiosError.response.data)) {
+        console.error('❌ Error de CORS detectado');
+        throw new Error('Error de CORS. Verifica que el servidor permita tu origen.');
+      }
+      
+      // Error del servidor
+      if (axiosError.response) {
+        const status = axiosError.response.status;
+        const errorMsg = axiosError.response.data?.error || 
+                        axiosError.response.data?.message || 
+                        axiosError.message || 
+                        `Error del servidor (${status})`;
+        
+        console.error(`❌ Error del servidor (${status}):`, errorMsg);
+        throw new Error(errorMsg);
+      }
+      
+      // Error genérico
+      const errorMessage = axiosError.message || 'Error al iniciar sesión';
+      console.error('❌ Error desconocido:', errorMessage);
       throw new Error(errorMessage);
     }
   }

@@ -20,6 +20,13 @@ import { requireRole, extractToken, forbiddenResponse } from '../lib/authorizati
 import { canCreateUsers } from '../lib/roles';
 
 /**
+ * Maneja requests OPTIONS para CORS
+ */
+export async function options(event: LambdaEvent): Promise<LambdaResponse> {
+  return successResponse({}, 200);
+}
+
+/**
  * Registra un nuevo usuario (público - para auto-registro)
  * POST /auth/register
  * NOTA: Este endpoint puede estar restringido según el caso de uso
@@ -79,34 +86,52 @@ export async function register(event: LambdaEvent): Promise<LambdaResponse> {
  */
 export async function login(event: LambdaEvent): Promise<LambdaResponse> {
   try {
+    // Manejar OPTIONS request para CORS
+    if (event.httpMethod === 'OPTIONS') {
+      return successResponse({}, 200);
+    }
+
     const body = parseJsonBody(event.body) as {
       email: string;
       password: string;
     };
 
+    console.log('🔐 Login handler llamado:', { email: body.email, hasPassword: !!body.password });
+
     // Validación básica
     if (!body.email || !body.password) {
+      console.error('❌ Login: Email o contraseña faltantes');
       return errorResponse('Email y contraseña son requeridos', 400);
     }
 
     // Validar formato de email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(body.email.trim())) {
+      console.error('❌ Login: Email inválido:', body.email);
       return errorResponse('Email inválido. Por favor ingresa un correo electrónico válido', 400);
     }
 
     // Validar que la contraseña no esté vacía
     if (!body.password.trim()) {
+      console.error('❌ Login: Contraseña vacía');
       return errorResponse('La contraseña es requerida', 400);
     }
 
+    console.log('🔐 Intentando signIn con Cognito...');
     const authResult = await signIn({
       email: body.email.trim(),
       password: body.password,
     });
 
+    console.log('✅ SignIn exitoso:', { 
+      hasAccessToken: !!authResult.accessToken,
+      hasUser: !!authResult.user,
+      challengeName: authResult.challengeName 
+    });
+
     // Si hay un desafío NEW_PASSWORD_REQUIRED, devolver la información del desafío
     if (authResult.challengeName === 'NEW_PASSWORD_REQUIRED') {
+      console.log('⚠️ Login requiere cambio de contraseña');
       return successResponse({
         challengeName: 'NEW_PASSWORD_REQUIRED',
         session: authResult.session,
@@ -114,11 +139,42 @@ export async function login(event: LambdaEvent): Promise<LambdaResponse> {
       });
     }
 
+    // Validar que el resultado tenga los datos necesarios
+    if (!authResult.accessToken) {
+      console.error('❌ Login: No hay accessToken en el resultado');
+      return errorResponse('Error: El servidor no devolvió un token de acceso', 500);
+    }
+
+    if (!authResult.user || !authResult.user.id || !authResult.user.email) {
+      console.error('❌ Login: Datos de usuario incompletos', authResult.user);
+      return errorResponse('Error: Datos de usuario incompletos', 500);
+    }
+
+    console.log('✅ Login completado exitosamente:', { 
+      userId: authResult.user.id,
+      email: authResult.user.email,
+      role: authResult.user.role 
+    });
+
     return successResponse(authResult);
   } catch (error) {
+    console.error('❌ Error en login handler:', error);
     const message = error instanceof Error ? error.message : 'Unknown error';
-    const statusCode = message.includes('incorrectos') || message.includes('confirmado') ? 401 : 400;
-    return errorResponse('Error en login: ' + message, statusCode);
+    const statusCode = message.includes('incorrectos') || 
+                      message.includes('confirmado') || 
+                      message.includes('NotAuthorizedException') ||
+                      message.includes('UserNotConfirmedException') ? 401 : 400;
+    
+    // Mensajes más claros
+    let errorMsg = message;
+    if (message.includes('NotAuthorizedException')) {
+      errorMsg = 'Email o contraseña incorrectos';
+    } else if (message.includes('UserNotConfirmedException')) {
+      errorMsg = 'Por favor confirma tu email antes de iniciar sesión';
+    }
+    
+    console.error(`❌ Error en login (${statusCode}):`, errorMsg);
+    return errorResponse('Error en login: ' + errorMsg, statusCode);
   }
 }
 

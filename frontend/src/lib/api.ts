@@ -52,8 +52,24 @@ class ApiClient {
 
     // Interceptor para manejar errores y 401 (no autorizado)
     this.client.interceptors.response.use(
-      (response) => response,
+      (response) => {
+        // Log de respuestas exitosas para debugging
+        console.log('✅ API Response:', response.config.url, response.status);
+        return response;
+      },
       async (error) => {
+        // Log detallado del error
+        console.error('❌ API Error:', {
+          url: error.config?.url,
+          method: error.config?.method,
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          data: error.response?.data,
+          message: error.message,
+          code: error.code,
+          headers: error.response?.headers,
+        });
+        
         // Normalizar mensaje de error desde backend
         const backendMsg = error.response?.data?.error || error.response?.data?.message;
         if (backendMsg && typeof backendMsg === 'string') {
