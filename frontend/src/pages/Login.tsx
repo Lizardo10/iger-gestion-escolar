@@ -47,12 +47,26 @@ export function Login() {
     setIsLoading(true);
 
     try {
+      console.log('🔐 Iniciando login...');
       await login(trimmedEmail, trimmedPassword);
-      // Esperar un momento para asegurar que el estado se guardó
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('✅ Login exitoso, verificando estado...');
+      
+      // Esperar un momento para asegurar que el estado se guardó y propagó
+      await new Promise(resolve => setTimeout(resolve, 200));
+      
+      // Verificar que realmente está autenticado antes de navegar
+      const authService = await import('../lib/auth');
+      if (!authService.AuthService.isAuthenticated()) {
+        console.error('❌ Error: Login exitoso pero no está autenticado');
+        setError('Error al guardar la sesión. Por favor intenta nuevamente.');
+        return;
+      }
+      
+      console.log('✅ Estado verificado, navegando a dashboard...');
       navigate('/dashboard', { replace: true });
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      console.error('❌ Error en login:', errorMessage);
       setError(errorMessage);
     } finally {
       setIsLoading(false);

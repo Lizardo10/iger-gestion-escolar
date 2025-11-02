@@ -400,34 +400,45 @@ export class AuthService {
    */
   private static saveStateWithTokens(result: AuthResult): void {
     try {
-      localStorage.setItem(
-        AUTH_STORAGE_KEY,
-        JSON.stringify({
-          token: result.accessToken,
-          refreshToken: result.refreshToken,
-          idToken: result.idToken,
-          user: result.user,
-        })
-      );
+      const stateToSave = {
+        token: result.accessToken,
+        refreshToken: result.refreshToken,
+        idToken: result.idToken,
+        user: result.user,
+      };
+      
+      localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(stateToSave));
       localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+      
+      // Verificar que se guardó correctamente
+      const verify = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!verify) {
+        throw new Error('No se pudo verificar el guardado');
+      }
+      
+      console.log('✅ Estado guardado correctamente en localStorage');
     } catch (error) {
-      console.error('Error saving auth state:', error);
+      console.error('❌ Error saving auth state:', error);
       // Si hay error guardando, podría ser que localStorage está lleno
       // Intentar limpiar y guardar de nuevo
       try {
         localStorage.removeItem(AUTH_STORAGE_KEY);
-        localStorage.setItem(
-          AUTH_STORAGE_KEY,
-          JSON.stringify({
-            token: result.accessToken,
-            refreshToken: result.refreshToken,
-            idToken: result.idToken,
-            user: result.user,
-          })
-        );
+        localStorage.removeItem(AUTH_VERSION_KEY);
+        
+        const stateToSave = {
+          token: result.accessToken,
+          refreshToken: result.refreshToken,
+          idToken: result.idToken,
+          user: result.user,
+        };
+        
+        localStorage.setItem(AUTH_STORAGE_KEY, JSON.stringify(stateToSave));
         localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+        
+        console.log('✅ Estado guardado después de reintento');
       } catch (retryError) {
-        console.error('Error retrying save auth state:', retryError);
+        console.error('❌ Error retrying save auth state:', retryError);
+        throw new Error('No se pudo guardar la sesión');
       }
     }
   }

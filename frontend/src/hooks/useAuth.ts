@@ -14,8 +14,7 @@ export interface UseAuthReturn {
 }
 
 export function useAuth(): UseAuthReturn {
-  // CRÍTICO: NO inicializar desde AuthService aquí
-  // Esperar a que AuthProvider termine de inicializar
+  // CRÍTICO: Empezar con estado seguro - NO autenticado y loading
   const [user, setUser] = useState<AuthResult['user'] | null>(null);
   const [isLoading, setIsLoading] = useState(true); // Empieza como loading
   const [isAuthenticated, setIsAuthenticated] = useState(false); // Empieza como NO autenticado
@@ -23,18 +22,41 @@ export function useAuth(): UseAuthReturn {
   useEffect(() => {
     // Función para actualizar el estado desde AuthService
     const updateState = () => {
-      setUser(AuthService.getUser());
-      setIsLoading(AuthService.isLoading());
-      setIsAuthenticated(AuthService.isAuthenticated());
+      // Solo actualizar si AuthService está inicializado
+      if (AuthService.isAuthenticated() || !AuthService.isLoading()) {
+        const currentUser = AuthService.getUser();
+        const currentLoading = AuthService.isLoading();
+        const currentAuth = AuthService.isAuthenticated();
+        
+        setUser(currentUser);
+        setIsLoading(currentLoading);
+        setIsAuthenticated(currentAuth);
+        
+        console.log('🔄 useAuth actualizado:', { 
+          isLoading: currentLoading, 
+          isAuthenticated: currentAuth,
+          hasUser: !!currentUser 
+        });
+      } else {
+        // Si aún está cargando, mantener loading
+        setIsLoading(true);
+        setIsAuthenticated(false);
+      }
     };
 
-    // Suscribirse a cambios (AuthProvider ya inicializó)
+    // Suscribirse a cambios
     const unsubscribe = AuthService.subscribe(updateState);
 
-    // Actualizar estado inicial (por si acaso)
-    updateState();
+    // Esperar un momento y luego actualizar estado
+    // Esto asegura que AuthProvider haya terminado de inicializar
+    const timer = setTimeout(() => {
+      updateState();
+    }, 100);
 
-    return unsubscribe;
+    return () => {
+      clearTimeout(timer);
+      unsubscribe();
+    };
   }, []);
 
   const login = useCallback(async (email: string, password: string) => {
