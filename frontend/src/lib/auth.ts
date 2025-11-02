@@ -110,20 +110,101 @@ export class AuthService {
   static async init(): Promise<void> {
     console.log('🔐 AuthService.init() llamado');
     
-    // CRÍTICO: SIEMPRE empezar con estado NO autenticado
-    // NO leer localStorage - solo marcar como inicializado
-    // Esto previene acceso no autorizado
-    this.state.isAuthenticated = false;
-    this.state.token = null;
-    this.state.user = null;
-    this.initialized = true;
-    this.state.isLoading = false;
-    
-    // NO restaurar de localStorage automáticamente
-    // Solo se autenticará después de un login explícito
-    console.log('ℹ️ Inicializado sin restaurar sesión - requiere login explícito');
-    
+    // Si ya está inicializado, no hacer nada
+    if (this.initialized) {
+      console.log('ℹ️ Ya inicializado, omitiendo init()');
+      return;
+    }
+
+    // Validar y limpiar datos corruptos antes de inicializar
+    this.validateAndCleanStorage();
+
+    this.state.isLoading = true;
     this.notifyListeners();
+
+    try {
+      // Leer localStorage y validar si hay sesión guardada
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      console.log('📦 Datos en localStorage:', stored ? 'Sí (validando...)' : 'No');
+      
+      if (stored) {
+        try {
+          const parsed = JSON.parse(stored);
+          const { token, refreshToken, idToken, user } = parsed;
+          
+          // VALIDACIÓN ESTRICTA de datos guardados
+          const hasValidToken = token && typeof token === 'string' && token.length > 20;
+          const hasValidUser = user && 
+                               typeof user === 'object' && 
+                               user.email && 
+                               typeof user.email === 'string' && 
+                               user.email.includes('@') &&
+                               user.role && 
+                               typeof user.role === 'string';
+          
+          console.log('🔍 Validación:', { hasValidToken, hasValidUser });
+          
+          if (hasValidToken && hasValidUser) {
+            // Datos válidos, restaurar sesión
+            console.log('✅ Sesión válida encontrada, restaurando...');
+            this.state.token = token;
+            this.state.user = user;
+            this.state.isAuthenticated = true;
+            this.initialized = true;
+            
+            // Verificar que refreshToken esté guardado
+            if (refreshToken && idToken) {
+              // Ya están guardados en localStorage, no hay que hacer nada
+            } else {
+              // Si falta alguno, intentar guardar de nuevo con lo que tenemos
+              if (token && user) {
+                this.saveStateWithTokens({
+                  accessToken: token,
+                  refreshToken: refreshToken || '',
+                  idToken: idToken || '',
+                  user,
+                });
+              }
+            }
+            
+            console.log('✅ Sesión restaurada exitosamente:', { email: user.email, role: user.role });
+          } else {
+            // Datos inválidos, limpiar
+            console.warn('⚠️ Datos inválidos en localStorage, limpiando...');
+            localStorage.removeItem(AUTH_STORAGE_KEY);
+            this.state.token = null;
+            this.state.user = null;
+            this.state.isAuthenticated = false;
+            this.initialized = true;
+          }
+        } catch (parseError) {
+          console.error('❌ Error parsing stored auth state:', parseError);
+          localStorage.removeItem(AUTH_STORAGE_KEY);
+          this.state.token = null;
+          this.state.user = null;
+          this.state.isAuthenticated = false;
+          this.initialized = true;
+        }
+      } else {
+        // No hay datos almacenados
+        console.log('ℹ️ No hay sesión guardada, usuario no autenticado');
+        this.state.token = null;
+        this.state.user = null;
+        this.state.isAuthenticated = false;
+        this.initialized = true;
+      }
+    } catch (error) {
+      console.error('❌ Error initializing auth:', error);
+      this.state.user = null;
+      this.state.token = null;
+      this.state.isAuthenticated = false;
+      this.initialized = true;
+      localStorage.removeItem(AUTH_STORAGE_KEY);
+    } finally {
+      this.state.isLoading = false;
+      console.log('✅ AuthService.init() completado, isAuthenticated:', this.state.isAuthenticated);
+      this.notifyListeners();
+    }
   }
 
   /**
@@ -227,16 +308,13 @@ export class AuthService {
    * IMPORTANTE: Solo retorna true si el estado está inicializado Y autenticado
    */
   static isAuthenticated(): boolean {
-    // CRÍTICO: Si no está inicializado, SIEMPRE retornar false
-    // NO intentar leer localStorage hasta que init() valide
+    // Si no está inicializado, retornar false
+    // useAuth esperará a que AuthProvider termine de inicializar
     if (!this.initialized) {
-      // NO llamar a initSync() aquí - esperar a que init() complete
       return false;
     }
-    // Solo retornar true si está inicializado Y marcado como autenticado
-    const result = this.state.isAuthenticated;
-    console.log('🔐 isAuthenticated() llamado:', { initialized: this.initialized, result });
-    return result;
+    // Retornar el estado de autenticación
+    return this.state.isAuthenticated;
   }
 
   /**

@@ -13,15 +13,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
-    // FORZAR LIMPIEZA INICIAL - Asegurar estado limpio
     console.log('🔐 AuthProvider: Inicializando autenticación...');
     
-    // CRÍTICO: Limpiar localStorage SIEMPRE al iniciar para prevenir acceso no autorizado
-    // Solo se restaurará si hay datos válidos verificados
-    console.log('🧹 Limpiando localStorage al iniciar para seguridad...');
-    AuthService.clearAll();
-    
-    // Limpiar cualquier caché problemático si se solicita explícitamente
+    // Limpiar caché solo si se solicita explícitamente
     const urlParams = new URLSearchParams(window.location.search);
     if (urlParams.get('clearCache') === 'true') {
       console.log('🧹 Clearing auth cache from URL parameter');
@@ -30,17 +24,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
 
     // Inicializar AuthService una sola vez al montar
-    // Como limpiamos todo, esto siempre empezará sin autenticación
+    // Esto restaurará la sesión si hay datos válidos en localStorage
     AuthService.init()
       .then(() => {
-        // Verificar que la autenticación se validó correctamente
         const isAuth = AuthService.isAuthenticated();
         console.log('✅ Auth initialized, isAuthenticated:', isAuth);
         
-        // Como limpiamos al inicio, isAuth debería ser false
-        // Solo se autenticará después de un login explícito
-        if (!isAuth) {
-          console.log('ℹ️ Usuario no autenticado (esperado después de limpiar)');
+        if (isAuth) {
+          const token = AuthService.getToken();
+          const user = AuthService.getUser();
+          if (token && user && user.email && user.role) {
+            console.log('✅ Sesión restaurada correctamente:', { email: user.email, role: user.role });
+          } else {
+            console.error('❌ Datos de autenticación inválidos después de restaurar, limpiando...');
+            AuthService.clearAll();
+          }
+        } else {
+          console.log('ℹ️ Usuario no autenticado');
         }
         
         setIsReady(true);
