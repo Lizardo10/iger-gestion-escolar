@@ -176,7 +176,7 @@ export class AuthService {
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
-          const { token, refreshToken, idToken, user } = parsed;
+          const { token, user } = parsed;
           
           // VALIDACIÓN MUY ESTRICTA
           const hasValidToken = token && typeof token === 'string' && token.length > 20; // JWT tokens son largos
@@ -198,14 +198,10 @@ export class AuthService {
             this.state.isAuthenticated = true;
             this.initialized = true;
             
-            // Si tenemos refreshToken pero falta en el estado guardado, restaurarlo
-            if (refreshToken && !parsed.refreshToken) {
-              this.saveStateWithTokens({
-                accessToken: token,
-                refreshToken: refreshToken || '',
-                idToken: idToken || '',
-                user,
-              });
+            // Si tenemos refreshToken, guardarlo también (si no estaba guardado)
+            if (parsed.refreshToken) {
+              // Los tokens ya están guardados correctamente en localStorage
+              // No necesitamos hacer nada adicional aquí
             }
             
             // No validamos el token aquí para evitar logout innecesario
