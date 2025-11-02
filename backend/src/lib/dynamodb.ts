@@ -92,7 +92,7 @@ export class DynamoDBService {
       KeyConditionExpression: keyConditionExpression,
       ExpressionAttributeValues: expressionAttributeValues,
       Limit: limit,
-      ExclusiveStartKey: exclusiveStartKey as any,
+      ExclusiveStartKey: exclusiveStartKey as Record<string, unknown> | undefined,
     });
     const result = await docClient.send(command);
     return {

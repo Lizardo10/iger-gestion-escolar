@@ -2,7 +2,7 @@ import { LambdaEvent } from '../types';
 import { errorResponse } from './utils';
 import { GetUserCommand } from '@aws-sdk/client-cognito-identity-provider';
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider';
-import { UserRole, hasPermission, canCreateUsers, canViewInvoices } from './roles';
+import { UserRole, hasPermission } from './roles';
 
 const cognitoClient = new CognitoIdentityProviderClient({ region: process.env.AWS_REGION || 'us-east-1' });
 

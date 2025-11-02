@@ -145,7 +145,7 @@ export async function signIn(params: LoginParams): Promise<AuthResult> {
 
   try {
     // Primero intentar con InitiateAuthCommand (cliente)
-    let authParams: InitiateAuthCommandInput = {
+    const authParams: InitiateAuthCommandInput = {
       AuthFlow: AuthFlowType.USER_PASSWORD_AUTH,
       ClientId: CLIENT_ID,
       AuthParameters: {
@@ -154,7 +154,7 @@ export async function signIn(params: LoginParams): Promise<AuthResult> {
       },
     };
 
-    let command = new InitiateAuthCommand(authParams);
+    const command = new InitiateAuthCommand(authParams);
     let response = await client.send(command);
 
     // Si hay desafío MFA_SETUP y el User Pool tiene MFA obligatorio,

@@ -2,7 +2,7 @@ import type { LambdaEvent, LambdaResponse } from '../types';
 import { successResponse, errorResponse, parseJsonBody } from '../lib/utils';
 
 // Mock OpenAI implementation - reemplazar con OpenAI SDK real
-async function callOpenAI(prompt: string, systemPrompt?: string): Promise<string> {
+async function callOpenAI(prompt: string, _systemPrompt?: string): Promise<string> {
   const apiKey = process.env.OPENAI_API_KEY;
   
   if (!apiKey) {

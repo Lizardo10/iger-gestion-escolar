@@ -22,7 +22,7 @@ import { canCreateUsers } from '../lib/roles';
 /**
  * Maneja requests OPTIONS para CORS
  */
-export async function options(event: LambdaEvent): Promise<LambdaResponse> {
+export async function options(_event: LambdaEvent): Promise<LambdaResponse> {
   return successResponse({}, 200);
 }
 

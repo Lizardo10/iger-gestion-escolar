@@ -105,7 +105,13 @@ export async function getAttendance(event: LambdaEvent): Promise<LambdaResponse>
 
 export async function getAttendanceReports(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const { classId, studentId, from, to } = event.queryStringParameters || {};
+    const { classId } = event.queryStringParameters || {};
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _studentId = event.queryStringParameters?.studentId;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _from = event.queryStringParameters?.from;
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const _to = event.queryStringParameters?.to;
 
     if (!classId) {
       return errorResponse('classId es requerido', 400);
@@ -167,7 +173,7 @@ export async function getAttendanceReports(event: LambdaEvent): Promise<LambdaRe
     });
 
     // Calcular porcentaje de asistencia
-    Object.entries(reports.students).forEach(([studentId, stats]) => {
+    Object.entries(reports.students).forEach(([_studentId, stats]) => {
       const studentStats = stats as { present: number; absent: number; late: number; excused: number };
       const total = studentStats.present + studentStats.absent + studentStats.late + studentStats.excused;
       studentStats['attendanceRate'] = total > 0 ? ((studentStats.present + studentStats.excused) / total) * 100 : 0;
