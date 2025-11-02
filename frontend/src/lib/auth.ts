@@ -28,13 +28,29 @@ export class AuthService {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
       if (stored) {
         try {
-          const { token, user } = JSON.parse(stored);
+          const parsed = JSON.parse(stored);
+          const { token, refreshToken, idToken, user } = parsed;
+          
           if (token && user) {
             this.state.token = token;
             this.state.user = user;
             this.state.isAuthenticated = true;
+            
+            // Si tenemos refreshToken pero falta en el estado guardado, restaurarlo
+            if (refreshToken && !parsed.refreshToken) {
+              this.saveStateWithTokens({
+                accessToken: token,
+                refreshToken: refreshToken || '',
+                idToken: idToken || '',
+                user,
+              });
+            }
+            
             // No validamos el token aquí para evitar logout innecesario
-            // El interceptor de API manejará los 401
+            // El interceptor de API manejará los 401 y refrescará automáticamente
+          } else {
+            // Si no hay token o user, limpiar
+            localStorage.removeItem(AUTH_STORAGE_KEY);
           }
         } catch (parseError) {
           console.error('Error parsing stored auth state:', parseError);
@@ -112,6 +128,50 @@ export class AuthService {
    */
   static getToken(): string | null {
     return this.state.token;
+  }
+
+  /**
+   * Intenta refrescar el token usando el refresh token guardado
+   */
+  static async refreshToken(): Promise<{ accessToken: string; refreshToken: string; idToken: string } | null> {
+    try {
+      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!stored) {
+        return null;
+      }
+
+      const { refreshToken: storedRefreshToken } = JSON.parse(stored);
+      if (!storedRefreshToken) {
+        return null;
+      }
+
+      // Llamar al backend para refrescar
+      const result = await CognitoService.refreshToken(storedRefreshToken);
+      
+      if (!result || !result.accessToken) {
+        throw new Error('No se pudo refrescar el token');
+      }
+      
+      // Actualizar el estado
+      this.state.token = result.accessToken;
+      
+      // Guardar los nuevos tokens (usar refreshToken del resultado o mantener el anterior si no viene)
+      this.saveStateWithTokens({
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken || storedRefreshToken,
+        idToken: result.idToken || '',
+        user: this.state.user!,
+      });
+
+      return {
+        accessToken: result.accessToken,
+        refreshToken: result.refreshToken || storedRefreshToken,
+        idToken: result.idToken || '',
+      };
+    } catch (error) {
+      console.error('Error refreshing token:', error);
+      return null;
+    }
   }
 
   /**

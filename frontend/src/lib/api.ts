@@ -39,11 +39,34 @@ class ApiClient {
           error.message = backendMsg;
         }
 
-        if (error.response?.status === 401) {
-          // Token inválido o expirado, cerrar sesión
+        const originalRequest = error.config;
+
+        // Si es 401 y no es una petición de refresh, intentar refresh token
+        if (error.response?.status === 401 && !originalRequest._retry && !originalRequest.url?.includes('/auth/refresh')) {
+          originalRequest._retry = true;
+
+          try {
+            // Intentar refrescar el token
+            const refreshed = await AuthService.refreshToken();
+            if (refreshed) {
+              // Actualizar el token en la request original
+              originalRequest.headers.Authorization = `Bearer ${refreshed.accessToken}`;
+              // Reintentar la request original
+              return this.client(originalRequest);
+            }
+          } catch (refreshError) {
+            // Si el refresh falla, entonces hacer logout
+            console.error('Error refreshing token:', refreshError);
+            await AuthService.logout();
+            window.location.href = '/login';
+            return Promise.reject(refreshError);
+          }
+
+          // Si llegamos aquí, el refresh no funcionó, hacer logout
           await AuthService.logout();
           window.location.href = '/login';
         }
+
         return Promise.reject(error);
       }
     );

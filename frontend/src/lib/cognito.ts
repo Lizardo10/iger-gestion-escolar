@@ -144,12 +144,20 @@ export class CognitoService {
   /**
    * Refresca el token de acceso
    */
-  static async refreshToken(refreshToken: string): Promise<string> {
+  static async refreshToken(refreshToken: string): Promise<{ accessToken: string; refreshToken: string; idToken: string }> {
     try {
-      const response = await api.post<{ accessToken: string }>('/auth/refresh', {
+      const response = await api.post<{
+        accessToken: string;
+        refreshToken: string;
+        idToken: string;
+      }>('/auth/refresh', {
         refreshToken,
       });
-      return response.data.accessToken;
+      return {
+        accessToken: response.data.accessToken,
+        refreshToken: response.data.refreshToken,
+        idToken: response.data.idToken,
+      };
     } catch (error: any) {
       const errorMessage = error?.response?.data?.error || error?.message || 'Error al refrescar token';
       throw new Error(errorMessage);

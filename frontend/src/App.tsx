@@ -27,38 +27,10 @@ function App() {
         }
       >
         <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route
-          path="dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="students"
-          element={
-            <ProtectedRoute>
-              <Students />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="tasks"
-          element={
-            <ProtectedRoute>
-              <Tasks />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="events"
-          element={
-            <ProtectedRoute>
-              <Events />
-            </ProtectedRoute>
-          }
-        />
+        <Route path="dashboard" element={<Dashboard />} />
+        <Route path="students" element={<Students />} />
+        <Route path="tasks" element={<Tasks />} />
+        <Route path="events" element={<Events />} />
         <Route
           path="payments"
           element={
@@ -76,6 +48,8 @@ function App() {
           }
         />
       </Route>
+      {/* Catch all - redirigir a login cualquier ruta no definida */}
+      <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>
   );
 }
