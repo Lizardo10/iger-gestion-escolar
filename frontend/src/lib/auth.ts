@@ -205,19 +205,44 @@ export class AuthService {
 
     try {
       const result = await CognitoService.login(params);
+      
+      // Verificar que el resultado sea válido
+      if (!result || !result.accessToken || !result.user) {
+        throw new Error('Respuesta de login inválida');
+      }
+
+      // Actualizar estado interno ANTES de guardar
       this.state.token = result.accessToken;
       this.state.user = result.user;
       this.state.isAuthenticated = true;
-      this.initialized = true; // Marcar como inicializado
+      this.initialized = true;
 
-      // Guardar tokens completos
+      // Guardar tokens completos en localStorage
       this.saveStateWithTokens(result);
+      
       // Guardar versión
       localStorage.setItem(AUTH_VERSION_KEY, CURRENT_AUTH_VERSION);
+      
+      // Verificar que se guardó correctamente
+      const verifyStored = localStorage.getItem(AUTH_STORAGE_KEY);
+      if (!verifyStored) {
+        console.error('ERROR: No se pudo guardar el estado de autenticación');
+        throw new Error('Error al guardar la sesión');
+      }
+
+      // Notificar listeners para actualizar UI
       this.notifyListeners();
+
+      // Esperar un momento para asegurar que el estado se propagó
+      await new Promise(resolve => setTimeout(resolve, 50));
 
       return result;
     } catch (error) {
+      // Si falla, limpiar estado
+      this.state.token = null;
+      this.state.user = null;
+      this.state.isAuthenticated = false;
+      this.notifyListeners();
       throw error;
     } finally {
       this.state.isLoading = false;

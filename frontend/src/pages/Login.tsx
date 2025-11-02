@@ -10,16 +10,50 @@ export function Login() {
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  // Validar formato de email
+  const validateEmail = (email: string): boolean => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email.trim());
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    
+    // Validaciones del frontend
+    const trimmedEmail = email.trim();
+    const trimmedPassword = password.trim();
+
+    if (!trimmedEmail) {
+      setError('El correo electrónico es requerido');
+      return;
+    }
+
+    if (!validateEmail(trimmedEmail)) {
+      setError('Por favor ingresa un correo electrónico válido');
+      return;
+    }
+
+    if (!trimmedPassword) {
+      setError('La contraseña es requerida');
+      return;
+    }
+
+    if (trimmedPassword.length < 6) {
+      setError('La contraseña debe tener al menos 6 caracteres');
+      return;
+    }
+
     setIsLoading(true);
 
     try {
-      await login(email, password);
-      navigate('/dashboard');
+      await login(trimmedEmail, trimmedPassword);
+      // Esperar un momento para asegurar que el estado se guardó
+      await new Promise(resolve => setTimeout(resolve, 100));
+      navigate('/dashboard', { replace: true });
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error al iniciar sesión');
+      const errorMessage = err instanceof Error ? err.message : 'Error al iniciar sesión';
+      setError(errorMessage);
     } finally {
       setIsLoading(false);
     }

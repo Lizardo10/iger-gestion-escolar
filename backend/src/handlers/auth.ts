@@ -79,15 +79,29 @@ export async function register(event: LambdaEvent): Promise<LambdaResponse> {
  */
 export async function login(event: LambdaEvent): Promise<LambdaResponse> {
   try {
-    const body = parseJsonBody(event.body) as { email: string; password: string };
+    const body = parseJsonBody(event.body) as {
+      email: string;
+      password: string;
+    };
 
     // Validación básica
     if (!body.email || !body.password) {
-      return errorResponse('Email y password son requeridos', 400);
+      return errorResponse('Email y contraseña son requeridos', 400);
+    }
+
+    // Validar formato de email
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(body.email.trim())) {
+      return errorResponse('Email inválido. Por favor ingresa un correo electrónico válido', 400);
+    }
+
+    // Validar que la contraseña no esté vacía
+    if (!body.password.trim()) {
+      return errorResponse('La contraseña es requerida', 400);
     }
 
     const authResult = await signIn({
-      email: body.email,
+      email: body.email.trim(),
       password: body.password,
     });
 
