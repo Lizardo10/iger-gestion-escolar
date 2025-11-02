@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { paymentsService } from '../services/payments';
+import { paymentsService, type ListInvoicesParams } from '../services/payments';
 import { useAuth } from '../hooks/useAuth';
 import type { Payment } from '../types';
 
@@ -27,15 +27,12 @@ export function Payments() {
       setLoading(true);
       setError('');
       
-      const queryParams: Record<string, string | number> = {
+      const queryParams: ListInvoicesParams = {
         orgId,
         page,
         limit: pagination.limit,
+        ...(lastKey && { lastKey }),
       };
-      
-      if (lastKey) {
-        queryParams.lastKey = lastKey;
-      }
 
       const data = await paymentsService.list(queryParams);
       setInvoices(data.invoices || []);

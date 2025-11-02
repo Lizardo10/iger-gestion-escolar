@@ -71,7 +71,7 @@ let dbInstance: IDBPDatabase | null = null;
 
 export async function getDB(): Promise<IDBPDatabase> {
   if (!dbInstance) {
-    dbInstance = await openDB<IgerDB>('IgerOffline', 1, {
+    dbInstance = await openDB('IgerOffline', 1, {
       upgrade(db) {
         // Create cachedData store
         const cachedDataStore = db.createObjectStore('cachedData', {
