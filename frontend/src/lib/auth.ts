@@ -146,9 +146,21 @@ export class AuthService {
    * Restaura el estado de autenticación desde localStorage
    */
   static async init(): Promise<void> {
-    // Si ya está inicializado, no hacer nada
+    console.log('🔐 AuthService.init() llamado');
+    
+    // Si ya está inicializado Y autenticado, no hacer nada
     if (this.initialized && this.state.isAuthenticated) {
+      console.log('ℹ️ Ya inicializado y autenticado, omitiendo init()');
       return;
+    }
+
+    // CRÍTICO: Siempre empezar con estado NO autenticado
+    // Esto previene acceso no autorizado durante la validación
+    const wasAuthenticated = this.state.isAuthenticated;
+    if (wasAuthenticated) {
+      console.warn('⚠️ Advertencia: Estado autenticado antes de init(), limpiando temporalmente');
+      this.state.isAuthenticated = false;
+      this.notifyListeners();
     }
 
     // Validar y limpiar datos corruptos antes de inicializar
@@ -159,14 +171,28 @@ export class AuthService {
 
     try {
       const stored = localStorage.getItem(AUTH_STORAGE_KEY);
+      console.log('📦 Datos en localStorage:', stored ? 'Sí (validando...)' : 'No');
+      
       if (stored) {
         try {
           const parsed = JSON.parse(stored);
           const { token, refreshToken, idToken, user } = parsed;
           
-          // Validar que el token y user sean válidos
-          if (token && user && user.email && user.role && typeof token === 'string' && token.length > 10) {
+          // VALIDACIÓN MUY ESTRICTA
+          const hasValidToken = token && typeof token === 'string' && token.length > 20; // JWT tokens son largos
+          const hasValidUser = user && 
+                               typeof user === 'object' && 
+                               user.email && 
+                               typeof user.email === 'string' && 
+                               user.email.includes('@') &&
+                               user.role && 
+                               typeof user.role === 'string';
+          
+          console.log('🔍 Validación:', { hasValidToken, hasValidUser });
+          
+          if (hasValidToken && hasValidUser) {
             // Token parece válido, marcar como autenticado
+            console.log('✅ Datos válidos, marcando como autenticado');
             this.state.token = token;
             this.state.user = user;
             this.state.isAuthenticated = true;
@@ -185,24 +211,33 @@ export class AuthService {
             // No validamos el token aquí para evitar logout innecesario
             // El interceptor de API manejará los 401 y refrescará automáticamente
           } else {
-            // Si no hay token o user, limpiar
+            // Si no hay token o user válidos, limpiar
+            console.warn('⚠️ Datos inválidos, limpiando localStorage');
             localStorage.removeItem(AUTH_STORAGE_KEY);
+            this.state.token = null;
+            this.state.user = null;
             this.state.isAuthenticated = false;
             this.initialized = true;
           }
         } catch (parseError) {
-          console.error('Error parsing stored auth state:', parseError);
+          console.error('❌ Error parsing stored auth state:', parseError);
           // Si hay error parseando, limpiar y dejar sin autenticar
           localStorage.removeItem(AUTH_STORAGE_KEY);
+          this.state.token = null;
+          this.state.user = null;
           this.state.isAuthenticated = false;
           this.initialized = true;
         }
       } else {
+        // No hay datos almacenados
+        console.log('ℹ️ No hay datos en localStorage, usuario no autenticado');
+        this.state.token = null;
+        this.state.user = null;
         this.state.isAuthenticated = false;
         this.initialized = true;
       }
     } catch (error) {
-      console.error('Error initializing auth:', error);
+      console.error('❌ Error initializing auth:', error);
       // No hacer logout automático, solo limpiar el estado
       this.state.user = null;
       this.state.token = null;
@@ -211,6 +246,7 @@ export class AuthService {
       localStorage.removeItem(AUTH_STORAGE_KEY);
     } finally {
       this.state.isLoading = false;
+      console.log('✅ AuthService.init() completado, isAuthenticated:', this.state.isAuthenticated);
       this.notifyListeners();
     }
   }
