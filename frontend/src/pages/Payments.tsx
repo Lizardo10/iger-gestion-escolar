@@ -195,6 +195,14 @@ export function Payments() {
                 <td className="px-4 py-3 text-sm text-gray-600">{invoice.dueDate}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex gap-2 justify-end">
+                    <a
+                      href={`${(import.meta as { env: { VITE_API_URL?: string } }).env.VITE_API_URL || ''}/payments/invoices/${invoice.id}/pdf?orgId=${orgId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary-600 hover:text-primary-800 text-sm"
+                    >
+                      📄 PDF
+                    </a>
                     <button className="text-primary-600 hover:text-primary-800 text-sm">Ver</button>
                     {invoice.status === 'pending' && (
                       <button onClick={() => handlePay(invoice)} className="text-green-600 hover:text-green-800 text-sm">

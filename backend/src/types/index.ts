@@ -88,6 +88,7 @@ export interface Invoice {
   dueDate: string;
   paymentUrl?: string;
   paypalOrderId?: string;
+  enrollmentId?: string;
   orgId: string;
 }
 

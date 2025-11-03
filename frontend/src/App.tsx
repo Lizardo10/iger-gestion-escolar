@@ -12,6 +12,11 @@ import { Tasks } from './pages/Tasks';
 import { Events } from './pages/Events';
 import { Payments } from './pages/Payments';
 import { Attendance } from './pages/Attendance';
+import { Profile } from './pages/Profile';
+import { Enrollment } from './pages/Enrollment';
+import { Chat } from './pages/Chat';
+import { PaymentsSuccess } from './pages/PaymentsSuccess';
+import { PaymentsCancel } from './pages/PaymentsCancel';
 
 function App() {
   return (
@@ -20,6 +25,8 @@ function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/forgot-password" element={<ForgotPassword />} />
       <Route path="/reset-password" element={<ResetPassword />} />
+      <Route path="/payments/success" element={<PaymentsSuccess />} />
+      <Route path="/payments/cancel" element={<PaymentsCancel />} />
       <Route
         path="/"
         element={
@@ -41,15 +48,25 @@ function App() {
             </RoleProtectedRoute>
           }
         />
-        <Route
-          path="attendance"
-          element={
-            <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
-              <Attendance />
-            </RoleProtectedRoute>
-          }
-        />
-      </Route>
+              <Route
+                path="attendance"
+                element={
+                  <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
+                    <Attendance />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route path="profile" element={<Profile />} />
+              <Route
+                path="enrollment"
+                element={
+                  <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
+                    <Enrollment />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route path="chat" element={<Chat />} />
+            </Route>
       {/* Catch all - redirigir a login cualquier ruta no definida */}
       <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>

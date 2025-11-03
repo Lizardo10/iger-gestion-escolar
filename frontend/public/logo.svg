@@ -1,0 +1,60 @@
+<svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+	 width="100%" viewBox="0 0 800 600" enable-background="new 0 0 800 600" xml:space="preserve">
+<defs>
+	<!-- Gradiente suave para el oso -->
+	<linearGradient id="bearGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+		<stop offset="0%" style="stop-color:#FFD700;stop-opacity:1" />
+		<stop offset="50%" style="stop-color:#FFC107;stop-opacity:1" />
+		<stop offset="100%" style="stop-color:#FFA000;stop-opacity:1" />
+	</linearGradient>
+</defs>
+
+<!-- OSO AMARILLO -->
+<!-- Cuerpo del oso -->
+<circle fill="url(#bearGradient)" stroke="#1E88E5" stroke-width="8" cx="250" cy="350" r="120"/>
+<!-- Camiseta azul del oso -->
+<rect fill="#1E88E5" stroke="#1565C0" stroke-width="6" x="170" y="280" width="160" height="100" rx="50"/>
+<!-- Cabeza del oso -->
+<circle fill="url(#bearGradient)" stroke="#1E88E5" stroke-width="8" cx="250" cy="200" r="90"/>
+<!-- Orejas del oso -->
+<ellipse fill="url(#bearGradient)" stroke="#1E88E5" stroke-width="8" cx="190" cy="140" rx="35" ry="40"/>
+<ellipse fill="url(#bearGradient)" stroke="#1E88E5" stroke-width="8" cx="310" cy="140" rx="35" ry="40"/>
+<!-- Ojos del oso -->
+<circle fill="#000000" cx="230" cy="190" r="12"/>
+<circle fill="#000000" cx="270" cy="190" r="12"/>
+<!-- Nariz del oso -->
+<ellipse fill="#000000" cx="250" cy="210" rx="8" ry="10"/>
+<!-- Boca del oso -->
+<path fill="#000000" stroke="#000000" stroke-width="4" stroke-linecap="round" d="M 250,220 Q 250,235 220,235"/>
+<!-- Mejillas rosadas del oso -->
+<ellipse fill="#FFB3BA" opacity="0.8" cx="210" cy="205" rx="15" ry="12"/>
+<ellipse fill="#FFB3BA" opacity="0.8" cx="290" cy="205" rx="15" ry="12"/>
+<!-- Cejas del oso -->
+<path stroke="#1E88E5" stroke-width="4" stroke-linecap="round" fill="none" d="M 220,175 Q 225,170 230,175"/>
+<path stroke="#1E88E5" stroke-width="4" stroke-linecap="round" fill="none" d="M 270,175 Q 275,170 280,175"/>
+
+<!-- PINGÜINO -->
+<!-- Cuerpo del pingüino (parte negra) -->
+<ellipse fill="#263238" stroke="#1E88E5" stroke-width="8" cx="550" cy="350" rx="110" ry="130"/>
+<!-- Pecho blanco del pingüino -->
+<ellipse fill="#FFFFFF" stroke="#1E88E5" stroke-width="6" cx="550" cy="330" rx="80" ry="100"/>
+<!-- Cabeza del pingüino (negra) -->
+<ellipse fill="#263238" stroke="#1E88E5" stroke-width="8" cx="550" cy="180" rx="85" ry="95"/>
+<!-- Pico del pingüino (naranja) -->
+<ellipse fill="#FF8C00" stroke="#1E88E5" stroke-width="5" cx="580" cy="200" rx="25" ry="20" transform="rotate(-20 580 200)"/>
+<!-- Ojos del pingüino -->
+<circle fill="#000000" cx="535" cy="170" r="10"/>
+<circle fill="#000000" cx="565" cy="170" r="10"/>
+<!-- Mejillas rosadas del pingüino -->
+<ellipse fill="#FFB3BA" opacity="0.8" cx="515" cy="190" rx="12" ry="10"/>
+<ellipse fill="#FFB3BA" opacity="0.8" cx="585" cy="190" rx="12" ry="10"/>
+<!-- Patas del pingüino (naranjas) -->
+<ellipse fill="#FF8C00" stroke="#1E88E5" stroke-width="4" cx="520" cy="470" rx="35" ry="20"/>
+<ellipse fill="#FF8C00" stroke="#1E88E5" stroke-width="4" cx="580" cy="470" rx="35" ry="20"/>
+<!-- Alas del pingüino -->
+<ellipse fill="#263238" stroke="#1E88E5" stroke-width="6" cx="480" cy="320" rx="50" ry="80" transform="rotate(-30 480 320)"/>
+<ellipse fill="#263238" stroke="#1E88E5" stroke-width="6" cx="620" cy="320" rx="50" ry="80" transform="rotate(30 620 320)"/>
+
+<!-- TEXTO IGER (opcional, puedes quitarlo si prefieres) -->
+<text x="400" y="550" font-family="Arial, sans-serif" font-size="48" font-weight="bold" fill="#1E88E5" text-anchor="middle">IGER</text>
+</svg>

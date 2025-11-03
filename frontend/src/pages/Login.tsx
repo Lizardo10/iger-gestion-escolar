@@ -66,8 +66,17 @@ export function Login() {
         return;
       }
       
-      console.log('✅ Estado verificado, navegando a dashboard...');
-      navigate('/dashboard', { replace: true });
+      console.log('✅ Estado verificado, navegando...');
+      
+      // Si hay una URL de redirección guardada (desde PayPal), usarla
+      const redirectUrl = localStorage.getItem('payment_redirect');
+      if (redirectUrl) {
+        console.log('📋 Redirigiendo a URL guardada:', redirectUrl);
+        localStorage.removeItem('payment_redirect');
+        navigate(redirectUrl, { replace: true });
+      } else {
+        navigate('/dashboard', { replace: true });
+      }
     } catch (err) {
       console.error('❌ Error completo en Login:', err);
       

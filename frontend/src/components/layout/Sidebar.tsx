@@ -18,10 +18,13 @@ export function Sidebar({ onClose }: SidebarProps) {
   const navItems: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['superadmin', 'admin', 'teacher', 'student'] },
     { path: '/students', label: 'Estudiantes', icon: '👥', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/enrollment', label: 'Inscripción', icon: '📋', roles: ['superadmin', 'admin', 'teacher'] },
     { path: '/tasks', label: 'Tareas', icon: '📝', roles: ['superadmin', 'admin', 'teacher', 'student'] },
     { path: '/events', label: 'Eventos', icon: '📅', roles: ['superadmin', 'admin', 'teacher', 'student'] },
     { path: '/payments', label: 'Pagos', icon: '💳', roles: ['superadmin', 'admin'] },
     { path: '/attendance', label: 'Asistencia', icon: '✅', roles: ['superadmin', 'admin', 'teacher'] },
+    { path: '/chat', label: 'Chat AI', icon: '💬', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/profile', label: 'Mi Perfil', icon: '👤', roles: ['superadmin', 'admin', 'teacher', 'student'] },
   ];
 
   // Filtrar items según el rol del usuario

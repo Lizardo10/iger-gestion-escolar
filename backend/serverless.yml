@@ -15,6 +15,9 @@ provider:
     PAYPAL_CLIENT_ID: ${env:PAYPAL_CLIENT_ID, ''}
     PAYPAL_SECRET: ${env:PAYPAL_SECRET, ''}
     PAYPAL_MODE: sandbox
+    FRONTEND_URL: ${env:FRONTEND_URL, 'https://dev.d2umdnu9x2m9qg.amplifyapp.com'}
+    AWS_SES_REGION: ${env:AWS_SES_REGION, 'us-east-1'}
+    EMAIL_FROM: ${env:EMAIL_FROM, 'noreply@iger.online'}
     # CORS permitido: '*' permite todos los orígenes (seguro para desarrollo)
     ALLOWED_ORIGIN: ${env:ALLOWED_ORIGIN, '*'}
   iam:
@@ -57,7 +60,13 @@ provider:
             - cognito-idp:DescribeUserPoolClient
           Resource:
             - "arn:aws:cognito-idp:${self:provider.region}:*:userpool/*"
-
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource:
+            - "*"
+ 
 custom:
   tableName: IgerData
   cognitoUserPoolId: us-east-1_gY5JpRMyV 
@@ -398,11 +407,43 @@ functions:
           method: post
           cors: true
   
+  verifyPayment:
+    handler: src/handlers/payments.verifyPayment.verifyPayment
+    events:
+      - http:
+          path: payments/verify
+          method: post
+          cors: true
+  
   getInvoice:
     handler: src/handlers/payments.getInvoice
     events:
       - http:
           path: payments/invoices/{invoiceId}
+          method: get
+          cors: true
+  
+  generateInvoicePDF:
+    handler: src/handlers/payments.generatePDF
+    events:
+      - http:
+          path: payments/invoices/{invoiceId}/pdf
+          method: get
+          cors: true
+  
+  enrollStudent:
+    handler: src/handlers/enrollment.enrollStudent
+    events:
+      - http:
+          path: enrollment
+          method: post
+          cors: true
+  
+  listEnrollments:
+    handler: src/handlers/enrollment.listEnrollments
+    events:
+      - http:
+          path: enrollment
           method: get
           cors: true
   
@@ -469,7 +510,15 @@ functions:
           path: ai/generate-content
           method: post
           cors: true
-
+  
+  chat:
+    handler: src/handlers/chat.chat
+    events:
+      - http:
+          path: chat
+          method: post
+          cors: true
+ 
 plugins:
   - serverless-dotenv-plugin
   # - serverless-plugin-typescript
