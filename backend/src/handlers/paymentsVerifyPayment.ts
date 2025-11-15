@@ -47,10 +47,22 @@ export async function verifyPayment(event: LambdaEvent): Promise<LambdaResponse>
     if (!finalOrderId && enrollmentId) {
       // Buscar el enrollment para obtener el orderId
       const orgId = user.orgId || 'default-org';
-      const enrollment = await DynamoDBService.getItem(`ORG#${orgId}`, `ENROLLMENT#${enrollmentId}`);
-      if (enrollment && enrollment.Type === 'Enrollment') {
-        const enrollmentData = enrollment.Data as { paypalOrderId?: string };
-        finalOrderId = enrollmentData.paypalOrderId;
+      try {
+        const enrollment = await DynamoDBService.getItem(`ORG#${orgId}`, `ENROLLMENT#${enrollmentId}`);
+        if (enrollment && enrollment.Type === 'Enrollment') {
+          const enrollmentData = enrollment.Data as { paypalOrderId?: string };
+          if (enrollmentData.paypalOrderId) {
+            finalOrderId = enrollmentData.paypalOrderId;
+            console.log(`✅ OrderId obtenido del enrollment: ${finalOrderId}`);
+          } else {
+            console.warn(`⚠️ Enrollment ${enrollmentId} no tiene paypalOrderId guardado`);
+          }
+        } else {
+          console.warn(`⚠️ Enrollment ${enrollmentId} no encontrado`);
+        }
+      } catch (error) {
+        console.error(`❌ Error obteniendo enrollment ${enrollmentId}:`, error);
+        // Continuar sin orderId del enrollment
       }
     }
 
@@ -87,8 +99,11 @@ export async function verifyPayment(event: LambdaEvent): Promise<LambdaResponse>
     if (orderDetails.status === 'COMPLETED' || orderDetails.status === 'CAPTURED') {
       console.log(`✅ Pago completado, procesando actualizaciones...`);
       
-      // Procesar el pago (igual que en el webhook)
-      return await processPaymentCapture(finalOrderId);
+      // Obtener orgId para optimizar la búsqueda
+      const orgId = user.orgId || 'default-org';
+      
+      // Procesar el pago con información adicional
+      return await processPaymentCapture(finalOrderId, orgId, enrollmentId, invoiceId);
     } else {
       return successResponse({
         orderId: finalOrderId,
@@ -106,28 +121,133 @@ export async function verifyPayment(event: LambdaEvent): Promise<LambdaResponse>
   }
 }
 
-async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
+async function processPaymentCapture(
+  orderId: string,
+  orgId?: string,
+  enrollmentId?: string,
+  invoiceId?: string
+): Promise<LambdaResponse> {
   try {
-    // Buscar factura por orderId
-    console.log(`🔍 Buscando factura con orderId: ${orderId}`);
-    const allInvoices = await DynamoDBService.scan('Type = :type', {
-      ':type': 'Invoice',
-    });
-    
-    // Filtrar por orderId en código
-    const invoices = allInvoices.filter((item: any) => {
-      if (item.Type !== 'Invoice' || !item.Data) return false;
-      const invoiceData = item.Data as Invoice & { paypalOrderId?: string };
-      return invoiceData.paypalOrderId === orderId;
-    });
+    let invoice: any = null;
+    let invoiceData: Invoice & { paypalOrderId?: string; enrollmentId?: string; studentId?: string } | null = null;
 
-    if (invoices.length === 0) {
-      console.warn(`⚠️ No se encontró factura con orderId: ${orderId}`);
-      return errorResponse('No se encontró factura asociada a esta orden', 404);
+    // Estrategia 1: Si tenemos invoiceId, buscar directamente
+    if (invoiceId && orgId) {
+      console.log(`🔍 Buscando factura directamente por ID: ${invoiceId}`);
+      try {
+        invoice = await DynamoDBService.getItem(`ORG#${orgId}`, `INVOICE#${invoiceId}`);
+        if (invoice && invoice.Type === 'Invoice') {
+          invoiceData = invoice.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string; studentId?: string };
+          // Verificar que el orderId coincida
+          if (invoiceData.paypalOrderId === orderId) {
+            console.log(`✅ Factura encontrada directamente por ID`);
+          } else {
+            console.warn(`⚠️ Factura encontrada pero orderId no coincide. Esperado: ${orderId}, Actual: ${invoiceData.paypalOrderId}`);
+            invoice = null;
+            invoiceData = null;
+          }
+        }
+      } catch (error) {
+        console.warn(`⚠️ Error buscando factura por ID:`, error);
+      }
     }
 
-    const invoice = invoices[0];
-    const invoiceData = invoice.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string };
+    // Estrategia 2: Si tenemos enrollmentId, buscar factura por enrollmentId
+    if (!invoice && enrollmentId && orgId) {
+      console.log(`🔍 Buscando factura por enrollmentId: ${enrollmentId}`);
+      try {
+        // Buscar todas las facturas de este orgId que tengan este enrollmentId
+        const invoices = await DynamoDBService.query(
+          undefined,
+          'PK = :orgId AND begins_with(SK, :prefix)',
+          {
+            ':orgId': `ORG#${orgId}`,
+            ':prefix': 'INVOICE#',
+          }
+        );
+
+        // Filtrar por enrollmentId y orderId
+        const matchingInvoices = invoices.filter((item: any) => {
+          if (item.Type !== 'Invoice' || !item.Data) return false;
+          const data = item.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string };
+          return data.enrollmentId === enrollmentId && data.paypalOrderId === orderId;
+        });
+
+        if (matchingInvoices.length > 0) {
+          invoice = matchingInvoices[0];
+          invoiceData = invoice.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string; studentId?: string };
+          console.log(`✅ Factura encontrada por enrollmentId`);
+        }
+      } catch (error) {
+        console.warn(`⚠️ Error buscando factura por enrollmentId:`, error);
+      }
+    }
+
+    // Estrategia 3: Si no encontramos la factura, hacer scan limitado por orgId
+    if (!invoice && orgId) {
+      console.log(`🔍 Buscando factura con orderId en orgId: ${orgId} (scan limitado)`);
+      try {
+        // Buscar todas las facturas de este orgId
+        const invoices = await DynamoDBService.query(
+          undefined,
+          'PK = :orgId AND begins_with(SK, :prefix)',
+          {
+            ':orgId': `ORG#${orgId}`,
+            ':prefix': 'INVOICE#',
+          }
+        );
+
+        // Filtrar por orderId en código
+        const matchingInvoices = invoices.filter((item: any) => {
+          if (item.Type !== 'Invoice' || !item.Data) return false;
+          const data = item.Data as Invoice & { paypalOrderId?: string };
+          return data.paypalOrderId === orderId;
+        });
+
+        if (matchingInvoices.length > 0) {
+          invoice = matchingInvoices[0];
+          invoiceData = invoice.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string; studentId?: string };
+          console.log(`✅ Factura encontrada por orderId en orgId`);
+        }
+      } catch (error) {
+        console.error(`❌ Error buscando factura por orgId:`, error);
+      }
+    }
+
+    // Estrategia 4: Último recurso - scan completo (solo si no tenemos orgId)
+    if (!invoice && !orgId) {
+      console.log(`⚠️ Buscando factura con scan completo (último recurso)`);
+      try {
+        const allInvoices = await DynamoDBService.scan('Type = :type', {
+          ':type': 'Invoice',
+        });
+        
+        const matchingInvoices = allInvoices.filter((item: any) => {
+          if (item.Type !== 'Invoice' || !item.Data) return false;
+          const data = item.Data as Invoice & { paypalOrderId?: string };
+          return data.paypalOrderId === orderId;
+        });
+
+        if (matchingInvoices.length > 0) {
+          invoice = matchingInvoices[0];
+          invoiceData = invoice.Data as Invoice & { paypalOrderId?: string; enrollmentId?: string; studentId?: string };
+          console.log(`✅ Factura encontrada con scan completo`);
+        }
+      } catch (error) {
+        console.error(`❌ Error en scan completo:`, error);
+      }
+    }
+
+    if (!invoice || !invoiceData) {
+      console.warn(`⚠️ No se encontró factura con orderId: ${orderId}, orgId: ${orgId}, enrollmentId: ${enrollmentId}, invoiceId: ${invoiceId}`);
+      return errorResponse('No se encontró factura asociada a esta orden. Verifica que el pago haya sido creado correctamente.', 404);
+    }
+
+    // Validar que invoiceData tenga los campos necesarios
+    if (!invoiceData.id || !invoiceData.studentId) {
+      console.error(`❌ Factura encontrada pero falta información:`, { id: invoiceData.id, studentId: invoiceData.studentId });
+      return errorResponse('La factura encontrada no tiene la información necesaria', 500);
+    }
 
     // Verificar si ya está pagada
     if (invoiceData.status === 'paid') {
@@ -178,15 +298,22 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
 
     // Si hay un enrollmentId, actualizar enrollment y activar estudiante
     if (invoiceData.enrollmentId) {
-      const orgId = invoice.PK.replace('ORG#', '');
+      // Obtener orgId del invoice o del parámetro pasado
+      const orgIdFromInvoice = invoice.PK.replace('ORG#', '');
+      const finalOrgId = orgId || orgIdFromInvoice;
+      
+      if (!finalOrgId) {
+        console.error('❌ No se pudo determinar orgId para actualizar enrollment');
+        return errorResponse('Error interno: no se pudo determinar la organización', 500);
+      }
       
       // Actualizar enrollment a active
       try {
-        const enrollment = await DynamoDBService.getItem(`ORG#${orgId}`, `ENROLLMENT#${invoiceData.enrollmentId}`);
+        const enrollment = await DynamoDBService.getItem(`ORG#${finalOrgId}`, `ENROLLMENT#${invoiceData.enrollmentId}`);
         if (enrollment && enrollment.Type === 'Enrollment') {
           await DynamoDBService.updateItem({
             Key: {
-              PK: `ORG#${orgId}`,
+              PK: `ORG#${finalOrgId}`,
               SK: `ENROLLMENT#${invoiceData.enrollmentId}`,
             },
             UpdateExpression: 'SET #Data.#status = :active, UpdatedAt = :updatedAt',
@@ -203,7 +330,7 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
           // Actualizar GSI2PK del enrollment
           await DynamoDBService.updateItem({
             Key: {
-              PK: `ORG#${orgId}`,
+              PK: `ORG#${finalOrgId}`,
               SK: `ENROLLMENT#${invoiceData.enrollmentId}`,
             },
             UpdateExpression: 'SET GSI2PK = :status',
@@ -221,11 +348,11 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
       // Activar estudiante
       try {
         const studentId = invoiceData.studentId;
-        const student = await DynamoDBService.getItem(`ORG#${orgId}`, `STUDENT#${studentId}`);
+        const student = await DynamoDBService.getItem(`ORG#${finalOrgId}`, `STUDENT#${studentId}`);
         if (student && student.Type === 'Student') {
           await DynamoDBService.updateItem({
             Key: {
-              PK: `ORG#${orgId}`,
+              PK: `ORG#${finalOrgId}`,
               SK: `STUDENT#${studentId}`,
             },
             UpdateExpression: 'SET #Data.#status = :active, UpdatedAt = :updatedAt',
@@ -242,7 +369,7 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
           // Actualizar GSI2PK del estudiante
           await DynamoDBService.updateItem({
             Key: {
-              PK: `ORG#${orgId}`,
+              PK: `ORG#${finalOrgId}`,
               SK: `STUDENT#${studentId}`,
             },
             UpdateExpression: 'SET GSI2PK = :status',
@@ -266,8 +393,8 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
       // Obtener nombre del estudiante
       let studentName: string | undefined;
       try {
-        const orgId = invoice.PK.replace('ORG#', '');
-        const student = await DynamoDBService.getItem(`ORG#${orgId}`, `STUDENT#${invoiceData.studentId}`);
+        const orgIdForEmail = orgId || invoice.PK.replace('ORG#', '');
+        const student = await DynamoDBService.getItem(`ORG#${orgIdForEmail}`, `STUDENT#${invoiceData.studentId}`);
         if (student && student.Type === 'Student' && student.Data) {
           const studentData = student.Data as { name?: string; firstName?: string; lastName?: string };
           studentName = studentData.name || `${studentData.firstName || ''} ${studentData.lastName || ''}`.trim();
@@ -282,8 +409,8 @@ async function processPaymentCapture(orderId: string): Promise<LambdaResponse> {
       // Obtener email del estudiante o padre
       let emailToSend = '';
       try {
-        const orgId = invoice.PK.replace('ORG#', '');
-        const student = await DynamoDBService.getItem(`ORG#${orgId}`, `STUDENT#${invoiceData.studentId}`);
+        const orgIdForEmail = orgId || invoice.PK.replace('ORG#', '');
+        const student = await DynamoDBService.getItem(`ORG#${orgIdForEmail}`, `STUDENT#${invoiceData.studentId}`);
         if (student && student.Type === 'Student' && student.Data) {
           const studentData = student.Data as { email?: string; studentEmail?: string };
           emailToSend = studentData.email || studentData.studentEmail || '';

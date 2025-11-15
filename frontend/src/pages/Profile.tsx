@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 export function Profile() {
   const { user, logout } = useAuth();
@@ -75,12 +76,9 @@ export function Profile() {
                   </div>
                 )}
                 <div className="pt-4 border-t">
-                  <button
-                    onClick={() => setIsEditing(true)}
-                    className="btn btn-primary"
-                  >
+                  <ThreeDButton onClick={() => setIsEditing(true)} showOrb>
                     Editar Perfil
-                  </button>
+                  </ThreeDButton>
                 </div>
               </div>
             ) : (
@@ -114,12 +112,14 @@ export function Profile() {
                   />
                   <p className="text-xs text-gray-500 mt-1">El email no se puede modificar</p>
                 </div>
-                <div className="pt-4 border-t flex gap-2">
-                  <button type="submit" className="btn btn-primary">
+                <div className="pt-4 border-t flex flex-wrap gap-3">
+                  <ThreeDButton type="submit" showOrb loading={false}>
                     Guardar Cambios
-                  </button>
-                  <button
+                  </ThreeDButton>
+                  <ThreeDButton
                     type="button"
+                    variant="secondary"
+                    showOrb
                     onClick={() => {
                       setIsEditing(false);
                       setFormData({
@@ -128,10 +128,9 @@ export function Profile() {
                         email: user?.email || '',
                       });
                     }}
-                    className="btn btn-secondary"
                   >
                     Cancelar
-                  </button>
+                  </ThreeDButton>
                 </div>
               </form>
             )}
@@ -143,12 +142,15 @@ export function Profile() {
           <div className="card">
             <h3 className="font-semibold mb-4">Acciones</h3>
             <div className="space-y-2">
-              <button
+              <ThreeDButton
                 onClick={handleLogout}
-                className="w-full btn btn-secondary text-left"
+                className="w-full justify-start"
+                variant="secondary"
+                showOrb
+                orbColor={{ primary: '#f97316', accent: '#fbbf24' }}
               >
                 🚪 Cerrar Sesión
-              </button>
+              </ThreeDButton>
             </div>
           </div>
 

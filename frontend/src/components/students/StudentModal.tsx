@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { Student } from '../../types';
+import { ThreeDButton } from '../ui/ThreeDButton';
 
 interface StudentModalProps {
   isOpen: boolean;
@@ -128,18 +129,19 @@ export function StudentModal({ isOpen, onClose, onSave, student }: StudentModalP
             </select>
           </div>
 
-          <div className="flex gap-3 justify-end">
-            <button
+          <div className="flex flex-wrap gap-3 justify-end">
+            <ThreeDButton
               type="button"
+              variant="secondary"
               onClick={onClose}
-              className="btn btn-secondary"
               disabled={isLoading}
+              showOrb
             >
               Cancelar
-            </button>
-            <button type="submit" className="btn btn-primary" disabled={isLoading}>
+            </ThreeDButton>
+            <ThreeDButton type="submit" disabled={isLoading} loading={isLoading} showOrb>
               {isLoading ? 'Guardando...' : 'Guardar'}
-            </button>
+            </ThreeDButton>
           </div>
         </form>
       </div>

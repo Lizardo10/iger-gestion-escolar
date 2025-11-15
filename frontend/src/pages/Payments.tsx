@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 import { paymentsService, type ListInvoicesParams } from '../services/payments';
 import { useAuth } from '../hooks/useAuth';
 import type { Payment } from '../types';
@@ -137,9 +138,9 @@ export function Payments() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Pagos</h1>
-        <button onClick={handleCreateInvoice} className="btn btn-primary">
+        <ThreeDButton onClick={handleCreateInvoice} showOrb>
           + Nueva Factura
-        </button>
+        </ThreeDButton>
       </div>
 
       {error && (
@@ -195,19 +196,30 @@ export function Payments() {
                 <td className="px-4 py-3 text-sm text-gray-600">{invoice.dueDate}</td>
                 <td className="px-4 py-3 text-right">
                   <div className="flex gap-2 justify-end">
-                    <a
+                    <ThreeDButton
+                      as="a"
                       href={`${(import.meta as { env: { VITE_API_URL?: string } }).env.VITE_API_URL || ''}/payments/invoices/${invoice.id}/pdf?orgId=${orgId}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-primary-600 hover:text-primary-800 text-sm"
+                      variant="secondary"
+                      size="sm"
+                      showOrb
+                      orbColor={{ primary: '#2563eb', accent: '#60a5fa' }}
                     >
-                      📄 PDF
-                    </a>
-                    <button className="text-primary-600 hover:text-primary-800 text-sm">Ver</button>
+                      PDF
+                    </ThreeDButton>
+                    <ThreeDButton variant="ghost" size="sm" showOrb orbColor={{ primary: '#6366f1', accent: '#c084fc' }}>
+                      Ver
+                    </ThreeDButton>
                     {invoice.status === 'pending' && (
-                      <button onClick={() => handlePay(invoice)} className="text-green-600 hover:text-green-800 text-sm">
+                      <ThreeDButton
+                        size="sm"
+                        onClick={() => handlePay(invoice)}
+                        showOrb
+                        orbColor={{ primary: '#16a34a', accent: '#4ade80' }}
+                      >
                         Pagar
-                      </button>
+                      </ThreeDButton>
                     )}
                   </div>
                 </td>
@@ -230,20 +242,26 @@ export function Payments() {
             Página {pagination.page} - Mostrando {invoices.length} facturas
           </div>
           <div className="flex gap-2">
-            <button
+            <ThreeDButton
               onClick={handlePrevPage}
               disabled={pagination.page === 1}
-              className="px-4 py-2 text-sm border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              size="sm"
+              variant="secondary"
+              showOrb
+              orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
             >
               Anterior
-            </button>
-            <button
+            </ThreeDButton>
+            <ThreeDButton
               onClick={handleNextPage}
               disabled={!pagination.hasMore}
-              className="px-4 py-2 text-sm border rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50"
+              size="sm"
+              variant="secondary"
+              showOrb
+              orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
             >
               Siguiente
-            </button>
+            </ThreeDButton>
           </div>
         </div>
       )}

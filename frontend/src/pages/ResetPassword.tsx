@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { api } from '../lib/api';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 export function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -131,13 +132,15 @@ export function ResetPassword() {
                 minLength={8}
               />
             </div>
-            <button
+            <ThreeDButton
               type="submit"
-              className="btn btn-primary w-full"
+              loading={isLoading}
               disabled={isLoading}
+              showOrb
+              className="w-full justify-center"
             >
               {isLoading ? 'Restableciendo...' : 'Restablecer Contraseña'}
-            </button>
+            </ThreeDButton>
             <div className="flex justify-between text-sm">
               <Link
                 to="/forgot-password"

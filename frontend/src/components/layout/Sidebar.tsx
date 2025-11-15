@@ -18,6 +18,8 @@ export function Sidebar({ onClose }: SidebarProps) {
   const navItems: NavItem[] = [
     { path: '/dashboard', label: 'Dashboard', icon: '📊', roles: ['superadmin', 'admin', 'teacher', 'student'] },
     { path: '/students', label: 'Estudiantes', icon: '👥', roles: ['superadmin', 'admin', 'teacher', 'student'] },
+    { path: '/my-classes', label: 'Mis Clases', icon: '🎓', roles: ['superadmin', 'admin', 'teacher'] },
+    { path: '/teachers', label: 'Profesores', icon: '🧑‍🏫', roles: ['superadmin', 'admin'] },
     { path: '/enrollment', label: 'Inscripción', icon: '📋', roles: ['superadmin', 'admin', 'teacher'] },
     { path: '/tasks', label: 'Tareas', icon: '📝', roles: ['superadmin', 'admin', 'teacher', 'student'] },
     { path: '/events', label: 'Eventos', icon: '📅', roles: ['superadmin', 'admin', 'teacher', 'student'] },

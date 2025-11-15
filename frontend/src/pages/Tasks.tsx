@@ -2,8 +2,12 @@ import { useState, useEffect } from 'react';
 import { tasksService } from '../services/tasks';
 import { TaskModal } from '../components/tasks/TaskModal';
 import type { Task } from '../types';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
+import { useAuth } from '../hooks/useAuth';
 
 export function Tasks() {
+  const { hasAnyRole } = useAuth();
+  const canManageTasks = hasAnyRole('superadmin', 'admin', 'teacher');
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [nextToken, setNextToken] = useState<string | undefined>(undefined);
@@ -40,16 +44,21 @@ export function Tasks() {
   };
 
   const handleCreate = () => {
+    if (!canManageTasks) return;
     setSelectedTask(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (task: Task) => {
+    if (!canManageTasks) return;
     setSelectedTask(task);
     setIsModalOpen(true);
   };
 
   const handleSave = async (taskData: Partial<Task>) => {
+    if (!canManageTasks) {
+      throw new Error('No tienes permisos para administrar tareas');
+    }
     try {
       if (selectedTask) {
         await tasksService.update({
@@ -76,6 +85,7 @@ export function Tasks() {
   };
 
   const handleDelete = async (taskId: string) => {
+    if (!canManageTasks) return;
     if (!confirm('¿Está seguro de eliminar esta tarea?')) return;
 
     try {
@@ -99,9 +109,11 @@ export function Tasks() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Tareas</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          + Nueva Tarea
-        </button>
+        {canManageTasks && (
+          <ThreeDButton onClick={handleCreate} showOrb>
+            + Nueva Tarea
+          </ThreeDButton>
+        )}
       </div>
 
       <div className="space-y-4">
@@ -119,14 +131,30 @@ export function Tasks() {
                   )}
                 </div>
               </div>
-              <div className="flex gap-2">
-                <button onClick={() => handleEdit(task)} className="text-primary-600 hover:text-primary-800 text-sm">
-                  Editar
-                </button>
-                <button onClick={() => handleDelete(task.id)} className="text-red-600 hover:text-red-800 text-sm">
-                  Eliminar
-                </button>
-              </div>
+              {canManageTasks ? (
+                <div className="flex gap-2">
+                  <ThreeDButton
+                    size="sm"
+                    variant="ghost"
+                    showOrb
+                    orbColor={{ primary: '#2563eb', accent: '#60a5fa' }}
+                    onClick={() => handleEdit(task)}
+                  >
+                    Editar
+                  </ThreeDButton>
+                  <ThreeDButton
+                    size="sm"
+                    variant="ghost"
+                    showOrb
+                    orbColor={{ primary: '#dc2626', accent: '#f87171' }}
+                    onClick={() => handleDelete(task.id)}
+                  >
+                    Eliminar
+                  </ThreeDButton>
+                </div>
+              ) : (
+                <span className="text-sm text-gray-400">Solo lectura</span>
+              )}
             </div>
           </div>
         ))}
@@ -134,24 +162,35 @@ export function Tasks() {
 
       {nextToken && !loading && (
         <div className="flex justify-center mt-4">
-          <button onClick={() => loadTasks(false)} className="btn btn-secondary">
+          <ThreeDButton
+            onClick={() => loadTasks(false)}
+            variant="secondary"
+            showOrb
+            orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
+          >
             Cargar más
-          </button>
+          </ThreeDButton>
         </div>
       )}
 
       {tasks.length === 0 && !loading && (
         <div className="card text-center py-12">
-          <p className="text-gray-600">No hay tareas asignadas. ¡Crea tu primera tarea!</p>
+          <p className="text-gray-600">
+            {canManageTasks
+              ? 'No hay tareas asignadas. ¡Crea tu primera tarea!'
+              : 'Aún no hay tareas disponibles para ti.'}
+          </p>
         </div>
       )}
 
-      <TaskModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        task={selectedTask}
-      />
+      {canManageTasks && (
+        <TaskModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSave}
+          task={selectedTask}
+        />
+      )}
     </div>
   );
 }

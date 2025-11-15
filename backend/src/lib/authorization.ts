@@ -13,6 +13,7 @@ export interface AuthenticatedUser {
   firstName?: string;
   lastName?: string;
   orgId?: string;
+  teacherId?: string; // cognito Username, coincide con id
 }
 
 /**
@@ -79,6 +80,7 @@ export async function getAuthenticatedUser(accessToken: string): Promise<Authent
       firstName: firstNameAttr?.Value,
       lastName: lastNameAttr?.Value,
       orgId: orgIdAttr?.Value,
+      teacherId: response.Username,
     };
   } catch (error) {
     console.error('Error obteniendo usuario:', error instanceof Error ? error.message : error);

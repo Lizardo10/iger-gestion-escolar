@@ -92,6 +92,47 @@ export interface Invoice {
   orgId: string;
 }
 
+export interface Teacher {
+  id: string;
+  orgId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  specialization?: string;
+  subjects: string[];
+  cognitoId?: string;
+  status: 'active' | 'inactive' | 'pending_credentials';
+  classes?: string[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface Class {
+  id: string;
+  orgId: string;
+  name: string;
+  grade: string;
+  section?: string;
+  schoolYear: string;
+  cycle?: string;
+  capacity?: number;
+  teacherId?: string;
+  previousTeacherIds?: string[];
+  status: 'active' | 'archived';
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ClassStudent {
+  classId: string;
+  studentId: string;
+  orgId: string;
+  assignedAt: number;
+  assignedBy: string;
+}
+
 export interface OfflineOperation {
   id: string;
   type: 'CREATE' | 'UPDATE' | 'DELETE';

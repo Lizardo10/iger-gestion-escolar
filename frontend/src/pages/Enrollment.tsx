@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { api } from '../lib/api';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 interface Enrollment {
   id: string;
@@ -216,9 +217,15 @@ export function Enrollment() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Inscripción de Alumnos</h1>
-        <button onClick={() => setShowForm(!showForm)} className="btn btn-primary">
-          {showForm ? 'Cancelar' : '+ Nuevo Alumno'}
-        </button>
+        <ThreeDButton
+          type="button"
+          onClick={() => setShowForm(!showForm)}
+          showOrb
+          aria-expanded={showForm}
+          aria-controls="enroll-form"
+        >
+          {showForm ? 'Cancelar' : 'Nuevo Alumno'}
+        </ThreeDButton>
       </div>
 
       {error && (
@@ -228,7 +235,7 @@ export function Enrollment() {
       )}
 
       {showForm && (
-        <div className="card mb-6">
+        <div className="card mb-6" id="enroll-form">
           <h2 className="text-xl font-bold mb-4">Nueva Inscripción</h2>
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -286,17 +293,19 @@ export function Enrollment() {
                 />
               </div>
             </div>
-            <div className="flex gap-2">
-              <button type="submit" className="btn btn-primary" disabled={loading}>
+            <div className="flex flex-wrap gap-3">
+              <ThreeDButton type="submit" loading={loading} showOrb>
                 {loading ? 'Inscribiendo...' : 'Inscribir Alumno'}
-              </button>
-              <button
+              </ThreeDButton>
+              <ThreeDButton
                 type="button"
+                variant="secondary"
                 onClick={() => setShowForm(false)}
-                className="btn btn-secondary"
+                showOrb
+                orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
               >
                 Cancelar
-              </button>
+              </ThreeDButton>
             </div>
           </form>
         </div>
@@ -342,24 +351,29 @@ export function Enrollment() {
                   <td className="px-4 py-3 text-right">
                     <div className="flex gap-2 justify-end">
                       {enrollment.status === 'pending' && enrollment.paymentUrl && (
-                        <a
+                        <ThreeDButton
+                          as="a"
                           href={enrollment.paymentUrl}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-green-600 hover:text-green-800 text-sm font-medium"
+                          variant="secondary"
+                          showOrb
+                          orbColor={{ primary: '#10b981', accent: '#34d399' }}
                         >
-                          💳 Pagar
-                        </a>
+                          Ir a Pagar
+                        </ThreeDButton>
                       )}
                       {enrollment.status === 'pending' && (
-                        <button
+                        <ThreeDButton
                           onClick={() => handleVerifyPayment(enrollment)}
                           disabled={verifyingPayment === enrollment.id}
-                          className="text-blue-600 hover:text-blue-800 text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          loading={verifyingPayment === enrollment.id}
+                          showOrb
+                          orbColor={{ primary: '#2563eb', accent: '#60a5fa' }}
                           title="Verificar si el pago ya fue completado"
                         >
-                          {verifyingPayment === enrollment.id ? '⏳ Verificando...' : '✅ Verificar Pago'}
-                        </button>
+                          {verifyingPayment === enrollment.id ? 'Verificando...' : 'Verificar Pago'}
+                        </ThreeDButton>
                       )}
                     </div>
                   </td>

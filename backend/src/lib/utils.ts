@@ -78,6 +78,14 @@ export function validateString(value: unknown, field: string, min = 1, max = 200
   return null;
 }
 
+export function validateEmail(value: unknown, field = 'email'): string | null {
+  if (typeof value !== 'string') return `Campo inválido: ${field}`;
+  const trimmed = value.trim().toLowerCase();
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(trimmed)) return `Email inválido en ${field}`;
+  return null;
+}
+
 export function validateISODate(value: unknown, field: string): string | null {
   if (typeof value !== 'string') return `Campo inválido: ${field}`;
   const d = new Date(value);

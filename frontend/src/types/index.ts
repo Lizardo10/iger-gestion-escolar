@@ -5,6 +5,7 @@ export interface User {
   lastName: string;
   role: 'superadmin' | 'admin' | 'teacher' | 'student';
   orgId?: string;
+  teacherId?: string;
   createdAt?: string;
   updatedAt?: string;
 }
@@ -24,14 +25,27 @@ export interface Student {
 
 export interface Class {
   id: string;
+  orgId: string;
   name: string;
-  subject: string;
-  teacherId: string;
-  studentIds: string[];
-  schedule: string;
-  academicYear: string;
-  createdAt: string;
-  updatedAt: string;
+  grade: string;
+  section?: string;
+  schoolYear: string;
+  cycle?: string;
+  capacity?: number;
+  teacherId?: string;
+  previousTeacherIds?: string[];
+  status: 'active' | 'archived';
+  createdBy: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ClassStudent {
+  classId: string;
+  studentId: string;
+  orgId: string;
+  assignedAt: number;
+  assignedBy: string;
 }
 
 export interface Task {
@@ -97,6 +111,22 @@ export interface PaymentItem {
 
 export interface Invoice extends Payment {
   createdAt: string;
+}
+
+export interface Teacher {
+  id: string;
+  orgId: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+  specialization?: string;
+  subjects: string[];
+  status: 'active' | 'inactive' | 'pending_credentials';
+  classes?: string[];
+  cognitoId?: string;
+  createdAt: number;
+  updatedAt: number;
 }
 
 export interface Attendance {

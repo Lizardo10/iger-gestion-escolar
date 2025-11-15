@@ -1,4 +1,5 @@
 import { useSync } from '../../hooks/useSync';
+import { ThreeDButton } from '../ui/ThreeDButton';
 
 export function SyncStatus() {
   const { status, getSyncIcon, sync } = useSync();
@@ -32,13 +33,16 @@ export function SyncStatus() {
       </div>
 
       {status.pendingCount > 0 && status.isOnline && (
-        <button
+        <ThreeDButton
           onClick={sync}
-          className="mt-2 w-full text-xs btn btn-primary"
           disabled={status.isSyncing}
+          loading={status.isSyncing}
+          showOrb
+          size="sm"
+          className="mt-3 w-full justify-center"
         >
           {status.isSyncing ? 'Sincronizando...' : 'Sincronizar Ahora'}
-        </button>
+        </ThreeDButton>
       )}
     </div>
   );

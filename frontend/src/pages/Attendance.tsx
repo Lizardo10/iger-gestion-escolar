@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 type AttendanceStatus = 'present' | 'absent' | 'late' | 'excused';
 
@@ -68,11 +69,18 @@ export function Attendance() {
 
   return (
     <div>
-      <div className="flex justify-between items-center mb-6">
+      <div className="flex flex-col md:flex-row gap-4 md:gap-6 md:items-center md:justify-between mb-6">
         <h1 className="text-3xl font-bold">Asistencia</h1>
-        <button onClick={handleSave} className="btn btn-primary" disabled={isSaving}>
+        <ThreeDButton
+          onClick={handleSave}
+          disabled={isSaving}
+          loading={isSaving}
+          showOrb
+          className="w-full md:w-auto justify-center"
+          orbColor={{ primary: '#2563eb', accent: '#38bdf8' }}
+        >
           {isSaving ? 'Guardando...' : 'Guardar Asistencia'}
-        </button>
+        </ThreeDButton>
       </div>
 
       <div className="card mb-6">
@@ -127,39 +135,67 @@ export function Attendance() {
                   </span>
                 </td>
                 <td className="px-4 py-3">
-                  <div className="flex gap-2 justify-center">
-                    <button
-                      onClick={() => handleStatusChange(student.id, 'present')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        student.status === 'present' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-600'
+                  <div className="flex flex-wrap gap-2 justify-center">
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#22c55e', accent: '#4ade80' }}
+                      className={`min-w-[48px] justify-center ${
+                        student.status === 'present'
+                          ? 'bg-green-100 text-green-800'
+                          : 'bg-white/80 text-gray-600'
                       }`}
+                      aria-pressed={student.status === 'present'}
+                      onClick={() => handleStatusChange(student.id, 'present')}
                     >
                       ✓
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(student.id, 'absent')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        student.status === 'absent' ? 'bg-red-100 text-red-800' : 'bg-gray-100 text-gray-600'
+                    </ThreeDButton>
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#ef4444', accent: '#f87171' }}
+                      className={`min-w-[48px] justify-center ${
+                        student.status === 'absent'
+                          ? 'bg-red-100 text-red-800'
+                          : 'bg-white/80 text-gray-600'
                       }`}
+                      aria-pressed={student.status === 'absent'}
+                      onClick={() => handleStatusChange(student.id, 'absent')}
                     >
                       ✗
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(student.id, 'late')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        student.status === 'late' ? 'bg-yellow-100 text-yellow-800' : 'bg-gray-100 text-gray-600'
+                    </ThreeDButton>
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#f59e0b', accent: '#fcd34d' }}
+                      className={`min-w-[48px] justify-center ${
+                        student.status === 'late'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-white/80 text-gray-600'
                       }`}
+                      aria-pressed={student.status === 'late'}
+                      onClick={() => handleStatusChange(student.id, 'late')}
                     >
                       ⊗
-                    </button>
-                    <button
-                      onClick={() => handleStatusChange(student.id, 'excused')}
-                      className={`px-3 py-1 rounded text-sm ${
-                        student.status === 'excused' ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-600'
+                    </ThreeDButton>
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#2563eb', accent: '#38bdf8' }}
+                      className={`min-w-[48px] justify-center ${
+                        student.status === 'excused'
+                          ? 'bg-blue-100 text-blue-800'
+                          : 'bg-white/80 text-gray-600'
                       }`}
+                      aria-pressed={student.status === 'excused'}
+                      onClick={() => handleStatusChange(student.id, 'excused')}
                     >
                       ⊙
-                    </button>
+                    </ThreeDButton>
                   </div>
                 </td>
               </tr>

@@ -88,8 +88,87 @@ La aplicación funciona completamente offline:
 - `/components/common`: Componentes reutilizables
 - `/components/features`: Componentes por funcionalidad
 - `/components/3d`: Componentes de visualización 3D
+- `/components/ui`: Biblioteca de UI (botones 3D, tarjetas, etc.)
 - `/pages`: Páginas principales
 - `/lib/offline`: Lógica de sincronización offline
+
+## Botón 3D (`ThreeDButton`)
+
+El componente `ThreeDButton` ofrece un estilo unificado con animaciones Babylon.js y soporte accesible.
+
+```tsx
+import { ThreeDButton } from '@/components/ui/ThreeDButton';
+
+<ThreeDButton variant="primary" showOrb onClick={...}>
+  Acción principal
+</ThreeDButton>
+```
+
+### Variantes
+
+| Prop `variant` | Uso recomendado | Estilos |
+| -------------- | --------------- | ------- |
+| `primary` (default) | Acciones principales o CTA | Degradado azul, sombra intensa, texto blanco |
+| `secondary` | Acciones secundarias / botones complementarios | Fondo claro, borde suave, glow tenue |
+| `ghost` | Acciones neutras, iconos dentro de tablas o chips | Fondo translúcido, sin borde (ideal para botones compactos) |
+
+### Tamaños (`size`)
+
+| Valor | Altura | Usos |
+| ----- | ------ | ---- |
+| `sm` | ~40px | Tablas, paginación, icon buttons |
+| `md` (default) | ~48px | Formularios y acciones generales |
+| `lg` | ~56px | Hero, landing o CTA prominentes |
+
+### Accesibilidad
+
+- Incluye `focus-visible` con anillos accesibles (`FocusVisible`).
+- Acepta `aria-*`, `aria-expanded`, `aria-pressed`, etc. Igual que un `<button>` nativo.
+- Para enlaces, usar `as="a"` y proveer `href` (renderiza `<a>` con roles correctos).
+
+```tsx
+<ThreeDButton as="a" href="/docs" variant="secondary" showOrb>
+  Ver documentación
+</ThreeDButton>
+```
+
+### Estados
+
+- `loading={true}` muestra spinner con semitransparencia y bloquea interacciones.
+- `disabled` combina con `loading` para states consistentes.
+- `showOrb` activa el orbe 3D animado (cuidado con múltiples instancias en móviles muy antiguos).
+- `orbColor={{ primary, accent }}` permite customizar colores Babylon.js, útil para contextos como “pagar”, “eliminar” o “sincronizar”.
+
+### Recomendaciones de rendimiento (móvil)
+
+- El orbe 3D usa un `Engine` Babylon ligero, pero en listas grandes conviene desactivar `showOrb` o usar la variante `ghost`.
+- En vistas con muchos botones (ej. tablas extensas) limitar la animación a los iconos principales para evitar gastos de GPU.
+- El componente respeta `prefers-reduced-motion` (si el usuario reduce animaciones se puede desactivar `showOrb` en un wrapper personalizado).
+
+### Ejemplos prácticos
+
+```tsx
+// Primario con loading
+<ThreeDButton loading showOrb>
+  Guardando...
+</ThreeDButton>
+
+// Secundario compacto para paginación
+<ThreeDButton size="sm" variant="secondary" showOrb>
+  Siguiente
+</ThreeDButton>
+
+// Ghost para acciones en tabla con color personalizado
+<ThreeDButton
+  size="sm"
+  variant="ghost"
+  showOrb
+  orbColor={{ primary: '#dc2626', accent: '#f87171' }}
+  onClick={handleDelete}
+>
+  Eliminar
+</ThreeDButton>
+```
 
 ## Contribución
 Ver [CONTRIBUTING.md](../CONTRIBUTING.md)

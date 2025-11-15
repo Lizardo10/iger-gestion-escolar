@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../lib/api';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 export function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -48,11 +49,10 @@ export function ForgotPassword() {
             <div className="p-4 bg-green-50 border border-green-200 rounded-lg text-green-600 text-sm">
               ✅ Se ha enviado un código de verificación a tu email. Por favor revisa tu bandeja de entrada.
             </div>
-            <Link
-              to="/reset-password"
-              className="btn btn-primary w-full text-center block"
-            >
-              Continuar con el código
+            <Link to="/reset-password" className="block">
+              <ThreeDButton showOrb className="w-full justify-center">
+                Continuar con el código
+              </ThreeDButton>
             </Link>
             <Link
               to="/login"
@@ -74,13 +74,15 @@ export function ForgotPassword() {
                 required
               />
             </div>
-            <button
+            <ThreeDButton
               type="submit"
-              className="btn btn-primary w-full"
+              loading={isLoading}
               disabled={isLoading}
+              showOrb
+              className="w-full justify-center"
             >
               {isLoading ? 'Enviando...' : 'Enviar Código'}
-            </button>
+            </ThreeDButton>
             <Link
               to="/login"
               className="text-center text-primary-600 hover:text-primary-800 text-sm block"

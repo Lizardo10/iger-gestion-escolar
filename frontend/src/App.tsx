@@ -8,6 +8,8 @@ import { ForgotPassword } from './pages/ForgotPassword';
 import { ResetPassword } from './pages/ResetPassword';
 import { Dashboard } from './pages/Dashboard';
 import { Students } from './pages/Students';
+import { Teachers } from './pages/Teachers';
+import { TeacherClasses } from './pages/TeacherClasses';
 import { Tasks } from './pages/Tasks';
 import { Events } from './pages/Events';
 import { Payments } from './pages/Payments';
@@ -38,6 +40,22 @@ function App() {
         <Route index element={<Navigate to="/dashboard" replace />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="students" element={<Students />} />
+        <Route
+          path="my-classes"
+          element={
+            <RoleProtectedRoute allowedRoles={['superadmin', 'admin', 'teacher']}>
+              <TeacherClasses />
+            </RoleProtectedRoute>
+          }
+        />
+        <Route
+          path="teachers"
+          element={
+            <RoleProtectedRoute allowedRoles={['superadmin', 'admin']}>
+              <Teachers />
+            </RoleProtectedRoute>
+          }
+        />
         <Route path="tasks" element={<Tasks />} />
         <Route path="events" element={<Events />} />
         <Route

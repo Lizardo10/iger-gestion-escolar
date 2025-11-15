@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import type { Event } from '../../types';
+import { ThreeDButton } from '../ui/ThreeDButton';
 
 interface CalendarProps {
   events: Event[];
@@ -111,36 +112,77 @@ export function Calendar({ events, onEventClick }: CalendarProps) {
       {/* Controles */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6 pb-4 border-b">
         <div className="flex items-center gap-2">
-          <button onClick={goToPrevious} className="btn btn-secondary btn-sm">
+          <ThreeDButton
+            onClick={goToPrevious}
+            size="sm"
+            variant="secondary"
+            showOrb
+            className="px-3"
+            aria-label="Anterior"
+          >
             ←
-          </button>
-          <button onClick={goToToday} className="btn btn-secondary btn-sm px-4">
+          </ThreeDButton>
+          <ThreeDButton
+            onClick={goToToday}
+            size="sm"
+            variant="secondary"
+            showOrb
+            className="px-4"
+          >
             Hoy
-          </button>
-          <button onClick={goToNext} className="btn btn-secondary btn-sm">
+          </ThreeDButton>
+          <ThreeDButton
+            onClick={goToNext}
+            size="sm"
+            variant="secondary"
+            showOrb
+            className="px-3"
+            aria-label="Siguiente"
+          >
             →
-          </button>
+          </ThreeDButton>
           <h2 className="text-xl font-bold ml-4 capitalize">{monthName}</h2>
         </div>
         <div className="flex gap-2">
-          <button
+          <ThreeDButton
             onClick={() => setViewMode('month')}
-            className={`btn btn-sm ${viewMode === 'month' ? 'btn-primary' : 'btn-secondary'}`}
+            size="sm"
+            variant={viewMode === 'month' ? 'primary' : 'secondary'}
+            showOrb
+            orbColor={
+              viewMode === 'month'
+                ? { primary: '#2563eb', accent: '#38bdf8' }
+                : { primary: '#94a3b8', accent: '#cbd5f5' }
+            }
           >
             Mes
-          </button>
-          <button
+          </ThreeDButton>
+          <ThreeDButton
             onClick={() => setViewMode('week')}
-            className={`btn btn-sm ${viewMode === 'week' ? 'btn-primary' : 'btn-secondary'}`}
+            size="sm"
+            variant={viewMode === 'week' ? 'primary' : 'secondary'}
+            showOrb
+            orbColor={
+              viewMode === 'week'
+                ? { primary: '#2563eb', accent: '#38bdf8' }
+                : { primary: '#94a3b8', accent: '#cbd5f5' }
+            }
           >
             Semana
-          </button>
-          <button
+          </ThreeDButton>
+          <ThreeDButton
             onClick={() => setViewMode('day')}
-            className={`btn btn-sm ${viewMode === 'day' ? 'btn-primary' : 'btn-secondary'}`}
+            size="sm"
+            variant={viewMode === 'day' ? 'primary' : 'secondary'}
+            showOrb
+            orbColor={
+              viewMode === 'day'
+                ? { primary: '#2563eb', accent: '#38bdf8' }
+                : { primary: '#94a3b8', accent: '#cbd5f5' }
+            }
           >
             Día
-          </button>
+          </ThreeDButton>
         </div>
       </div>
 

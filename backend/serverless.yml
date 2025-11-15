@@ -55,6 +55,9 @@ provider:
             - cognito-idp:AdminSetUserPassword
             - cognito-idp:AdminInitiateAuth
             - cognito-idp:AdminRespondToAuthChallenge
+            - cognito-idp:AdminEnableUser
+            - cognito-idp:AdminDisableUser
+            - cognito-idp:AdminResetUserPassword
             - cognito-idp:ListUsers
             - cognito-idp:DescribeUserPool
             - cognito-idp:DescribeUserPoolClient
@@ -408,7 +411,7 @@ functions:
           cors: true
   
   verifyPayment:
-    handler: src/handlers/payments.verifyPayment.verifyPayment
+    handler: src/handlers/paymentsVerifyPayment.verifyPayment
     events:
       - http:
           path: payments/verify
@@ -469,6 +472,110 @@ functions:
       - http:
           path: attendance/reports
           method: get
+          cors: true
+
+  listTeachers:
+    handler: src/handlers/teachers.list
+    events:
+      - http:
+          path: teachers
+          method: get
+          cors: true
+
+  getTeacher:
+    handler: src/handlers/teachers.get
+    events:
+      - http:
+          path: teachers/{teacherId}
+          method: get
+          cors: true
+
+  createTeacher:
+    handler: src/handlers/teachers.create
+    events:
+      - http:
+          path: teachers
+          method: post
+          cors: true
+
+  updateTeacher:
+    handler: src/handlers/teachers.update
+    events:
+      - http:
+          path: teachers/{teacherId}
+          method: put
+          cors: true
+
+  deleteTeacher:
+    handler: src/handlers/teachers.remove
+    events:
+      - http:
+          path: teachers/{teacherId}
+          method: delete
+          cors: true
+
+  resetTeacherPassword:
+    handler: src/handlers/teachers.resetPassword
+    events:
+      - http:
+          path: teachers/{teacherId}/reset-password
+          method: post
+          cors: true
+
+  listClasses:
+    handler: src/handlers/classes.list
+    events:
+      - http:
+          path: classes
+          method: get
+          cors: true
+
+  getClass:
+    handler: src/handlers/classes.get
+    events:
+      - http:
+          path: classes/{classId}
+          method: get
+          cors: true
+
+  createClass:
+    handler: src/handlers/classes.create
+    events:
+      - http:
+          path: classes
+          method: post
+          cors: true
+
+  updateClass:
+    handler: src/handlers/classes.update
+    events:
+      - http:
+          path: classes/{classId}
+          method: put
+          cors: true
+
+  deleteClass:
+    handler: src/handlers/classes.remove
+    events:
+      - http:
+          path: classes/{classId}
+          method: delete
+          cors: true
+
+  assignClassStudent:
+    handler: src/handlers/classes.assignStudent
+    events:
+      - http:
+          path: classes/{classId}/students
+          method: post
+          cors: true
+
+  removeClassStudent:
+    handler: src/handlers/classes.removeStudent
+    events:
+      - http:
+          path: classes/{classId}/students/{studentId}
+          method: delete
           cors: true
   
   syncPull:
@@ -545,6 +652,10 @@ resources:
             AttributeType: S
           - AttributeName: GSI1SK
             AttributeType: S
+          - AttributeName: GSI2PK
+            AttributeType: S
+          - AttributeName: GSI2SK
+            AttributeType: S
         KeySchema:
           - AttributeName: PK
             KeyType: HASH
@@ -556,6 +667,14 @@ resources:
               - AttributeName: GSI1PK
                 KeyType: HASH
               - AttributeName: GSI1SK
+                KeyType: RANGE
+            Projection:
+              ProjectionType: ALL
+          - IndexName: GSI2
+            KeySchema:
+              - AttributeName: GSI2PK
+                KeyType: HASH
+              - AttributeName: GSI2SK
                 KeyType: RANGE
             Projection:
               ProjectionType: ALL

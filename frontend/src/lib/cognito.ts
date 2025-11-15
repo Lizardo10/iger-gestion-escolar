@@ -33,6 +33,7 @@ export interface AuthResult {
     lastName?: string;
     role?: 'superadmin' | 'admin' | 'teacher' | 'student';
     orgId?: string;
+    teacherId?: string;
   };
 }
 
@@ -107,6 +108,7 @@ export class CognitoService {
           lastName: data.user.lastName,
           role: data.user.role as 'superadmin' | 'admin' | 'teacher' | 'student',
           orgId: data.user.orgId,
+          teacherId: (data.user as { teacherId?: string }).teacherId ?? data.user.id,
         },
       };
     } catch (error: unknown) {

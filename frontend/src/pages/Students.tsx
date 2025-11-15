@@ -2,10 +2,14 @@ import { useState, useEffect } from 'react';
 import { studentsService, type CreateStudentParams } from '../services/students';
 import { StudentModal } from '../components/students/StudentModal';
 import type { Student } from '../types';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
+import { useAuth } from '../hooks/useAuth';
 
 const MOCK_ORG_ID = 'org-1'; // TODO: Obtener del contexto de autenticación
 
 export function Students() {
+  const { hasAnyRole } = useAuth();
+  const canManageStudents = hasAnyRole('superadmin', 'admin');
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
@@ -40,16 +44,21 @@ export function Students() {
   };
 
   const handleCreate = () => {
+    if (!canManageStudents) return;
     setSelectedStudent(null);
     setIsModalOpen(true);
   };
 
   const handleEdit = (student: Student) => {
+    if (!canManageStudents) return;
     setSelectedStudent(student);
     setIsModalOpen(true);
   };
 
   const handleSave = async (studentData: Partial<Student>) => {
+    if (!canManageStudents) {
+      throw new Error('No tienes permisos para administrar estudiantes');
+    }
     try {
       if (selectedStudent) {
         await studentsService.update({
@@ -76,6 +85,7 @@ export function Students() {
   };
 
   const handleDelete = async (studentId: string) => {
+    if (!canManageStudents) return;
     if (!confirm('¿Está seguro de eliminar este estudiante?')) return;
 
     try {
@@ -99,9 +109,11 @@ export function Students() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Estudiantes</h1>
-        <button onClick={handleCreate} className="btn btn-primary">
-          + Nuevo Estudiante
-        </button>
+        {canManageStudents && (
+          <ThreeDButton onClick={handleCreate} showOrb>
+            + Nuevo Estudiante
+          </ThreeDButton>
+        )}
       </div>
 
       {error && (
@@ -150,20 +162,30 @@ export function Students() {
                         </span>
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex gap-2 justify-end">
-                          <button
-                            onClick={() => handleEdit(student)}
-                            className="text-primary-600 hover:text-primary-800"
-                          >
-                            Editar
-                          </button>
-                          <button
-                            onClick={() => handleDelete(student.id)}
-                            className="text-red-600 hover:text-red-800"
-                          >
-                            Eliminar
-                          </button>
-                        </div>
+                        {canManageStudents ? (
+                          <div className="flex gap-2 justify-end">
+                            <ThreeDButton
+                              size="sm"
+                              variant="ghost"
+                              showOrb
+                              onClick={() => handleEdit(student)}
+                              orbColor={{ primary: '#2563eb', accent: '#60a5fa' }}
+                            >
+                              Editar
+                            </ThreeDButton>
+                            <ThreeDButton
+                              size="sm"
+                              variant="ghost"
+                              showOrb
+                              onClick={() => handleDelete(student.id)}
+                              orbColor={{ primary: '#dc2626', accent: '#f87171' }}
+                            >
+                              Eliminar
+                            </ThreeDButton>
+                          </div>
+                        ) : (
+                          <span className="text-sm text-gray-400">Solo lectura</span>
+                        )}
                       </td>
                     </tr>
                   ))}
@@ -173,21 +195,29 @@ export function Students() {
 
             {nextToken && (
               <div className="flex justify-center px-4 py-3 border-t">
-                <button onClick={() => loadStudents(false)} className="btn btn-secondary text-sm">
+                <ThreeDButton
+                  onClick={() => loadStudents(false)}
+                  variant="secondary"
+                  size="sm"
+                  showOrb
+                  orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
+                >
                   Cargar más
-                </button>
+                </ThreeDButton>
               </div>
             )}
           </>
         )}
       </div>
 
-      <StudentModal
-        isOpen={isModalOpen}
-        onClose={() => setIsModalOpen(false)}
-        onSave={handleSave}
-        student={selectedStudent}
-      />
+      {canManageStudents && (
+        <StudentModal
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          onSave={handleSave}
+          student={selectedStudent}
+        />
+      )}
     </div>
   );
 }

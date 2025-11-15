@@ -4,6 +4,7 @@ import { EventModal } from '../components/events/EventModal';
 import { useAuth } from '../hooks/useAuth';
 import { Calendar } from '../components/events/Calendar';
 import type { Event } from '../types';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 export function Events() {
   const { user, hasAnyRole } = useAuth();
@@ -161,22 +162,36 @@ export function Events() {
           Eventos {user?.role === 'student' && '(Mis Eventos)'}
         </h1>
         <div className="flex gap-2 flex-wrap">
-          <button
+          <ThreeDButton
             onClick={() => setSelectedView('list')}
-            className={`btn btn-sm md:btn ${selectedView === 'list' ? 'btn-primary' : 'btn-secondary'}`}
+            size="sm"
+            variant={selectedView === 'list' ? 'primary' : 'secondary'}
+            showOrb
+            orbColor={
+              selectedView === 'list'
+                ? { primary: '#2563eb', accent: '#38bdf8' }
+                : { primary: '#94a3b8', accent: '#cbd5f5' }
+            }
           >
             📋 Lista
-          </button>
-          <button
+          </ThreeDButton>
+          <ThreeDButton
             onClick={() => setSelectedView('calendar')}
-            className={`btn btn-sm md:btn ${selectedView === 'calendar' ? 'btn-primary' : 'btn-secondary'}`}
+            size="sm"
+            variant={selectedView === 'calendar' ? 'primary' : 'secondary'}
+            showOrb
+            orbColor={
+              selectedView === 'calendar'
+                ? { primary: '#2563eb', accent: '#38bdf8' }
+                : { primary: '#94a3b8', accent: '#cbd5f5' }
+            }
           >
             📅 Calendario
-          </button>
+          </ThreeDButton>
           {user?.role !== 'student' && (
-            <button onClick={handleCreate} className="btn btn-primary btn-sm md:btn">
+            <ThreeDButton onClick={handleCreate} showOrb size="sm">
               + Nuevo
-            </button>
+            </ThreeDButton>
           )}
         </div>
       </div>
@@ -201,12 +216,24 @@ export function Events() {
                 </div>
                 {user?.role !== 'student' && (
                   <div className="flex gap-2">
-                    <button onClick={() => handleEdit(event)} className="text-primary-600 hover:text-primary-800 text-sm">
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#2563eb', accent: '#60a5fa' }}
+                      onClick={() => handleEdit(event)}
+                    >
                       Editar
-                    </button>
-                    <button onClick={() => handleDelete(event.id)} className="text-red-600 hover:text-red-800 text-sm">
+                    </ThreeDButton>
+                    <ThreeDButton
+                      size="sm"
+                      variant="ghost"
+                      showOrb
+                      orbColor={{ primary: '#dc2626', accent: '#f87171' }}
+                      onClick={() => handleDelete(event.id)}
+                    >
                       Eliminar
-                    </button>
+                    </ThreeDButton>
                   </div>
                 )}
               </div>
@@ -217,9 +244,14 @@ export function Events() {
 
       {selectedView === 'list' && nextToken && !loading && (
         <div className="flex justify-center mt-4">
-          <button onClick={() => loadEvents(false)} className="btn btn-secondary">
+          <ThreeDButton
+            onClick={() => loadEvents(false)}
+            variant="secondary"
+            showOrb
+            orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
+          >
             Cargar más
-          </button>
+          </ThreeDButton>
         </div>
       )}
 

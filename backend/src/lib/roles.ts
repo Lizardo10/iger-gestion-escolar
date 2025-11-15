@@ -24,6 +24,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: 'invoices', actions: ['create', 'read', 'update', 'delete', 'list'] },
     { resource: 'payments', actions: ['read', 'list'] },
     { resource: 'attendance', actions: ['create', 'read', 'update', 'delete', 'list'] },
+    { resource: 'teachers', actions: ['create', 'read', 'update', 'delete', 'list'] },
+    { resource: 'classes', actions: ['create', 'read', 'update', 'delete', 'list'] },
   ],
   admin: [
     { resource: 'users', actions: ['create', 'read', 'update', 'delete', 'list'] },
@@ -33,6 +35,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: 'invoices', actions: ['create', 'read', 'update', 'delete', 'list'] },
     { resource: 'payments', actions: ['read', 'list'] },
     { resource: 'attendance', actions: ['create', 'read', 'update', 'delete', 'list'] },
+    { resource: 'teachers', actions: ['create', 'read', 'update', 'delete', 'list'] },
+    { resource: 'classes', actions: ['create', 'read', 'update', 'delete', 'list'] },
   ],
   teacher: [
     { resource: 'students', actions: ['read', 'list'] },
@@ -40,6 +44,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     { resource: 'events', actions: ['create', 'read', 'update', 'delete', 'list'] },
     { resource: 'attendance', actions: ['create', 'read', 'update', 'list'] },
     { resource: 'tasks/submissions', actions: ['read', 'update', 'list'] },
+    { resource: 'classes', actions: ['create', 'read', 'update', 'list'] },
   ],
   student: [
     { resource: 'tasks', actions: ['read', 'list'] },

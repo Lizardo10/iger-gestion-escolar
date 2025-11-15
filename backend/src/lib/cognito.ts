@@ -14,6 +14,9 @@ import {
   ForgotPasswordCommand,
   AdminInitiateAuthCommand,
   ConfirmForgotPasswordCommand,
+  AdminDisableUserCommand,
+  AdminEnableUserCommand,
+  AdminResetUserPasswordCommand,
   AssociateSoftwareTokenCommand,
   VerifySoftwareTokenCommand,
   RespondToAuthChallengeCommand,
@@ -482,6 +485,86 @@ export async function adminCreateUser(params: {
       throw error;
     }
     throw new Error('Error desconocido al crear usuario');
+  }
+}
+
+export async function adminDisableUser(username: string): Promise<void> {
+  if (!USER_POOL_ID) {
+    throw new Error('COGNITO_USER_POOL_ID no está configurado');
+  }
+
+  try {
+    const command = new AdminDisableUserCommand({
+      UserPoolId: USER_POOL_ID,
+      Username: username,
+    });
+    await client.send(command);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'UserNotFoundException') {
+      console.warn(`Intento de desactivar usuario inexistente: ${username}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+export async function adminEnableUser(username: string): Promise<void> {
+  if (!USER_POOL_ID) {
+    throw new Error('COGNITO_USER_POOL_ID no está configurado');
+  }
+
+  try {
+    const command = new AdminEnableUserCommand({
+      UserPoolId: USER_POOL_ID,
+      Username: username,
+    });
+    await client.send(command);
+  } catch (error) {
+    if (error instanceof Error && error.name === 'UserNotFoundException') {
+      console.warn(`Intento de activar usuario inexistente: ${username}`);
+      return;
+    }
+    throw error;
+  }
+}
+
+export async function adminResetUserPassword(username: string): Promise<string> {
+  if (!USER_POOL_ID) {
+    throw new Error('COGNITO_USER_POOL_ID no está configurado');
+  }
+
+  if (!username) {
+    throw new Error('Username es requerido');
+  }
+
+  const temporaryPassword = generateTemporaryPassword();
+
+  try {
+    const setPasswordCommand = new AdminSetUserPasswordCommand({
+      UserPoolId: USER_POOL_ID,
+      Username: username,
+      Password: temporaryPassword,
+      Permanent: false,
+    });
+
+    await client.send(setPasswordCommand);
+    return temporaryPassword;
+  } catch (error) {
+    if (error instanceof Error && error.name === 'UserNotFoundException') {
+      throw new Error('Usuario de Cognito no encontrado');
+    }
+
+    // Fallback: intentar reset nativo (envía email)
+    try {
+      const resetCommand = new AdminResetUserPasswordCommand({
+        UserPoolId: USER_POOL_ID,
+        Username: username,
+      });
+      await client.send(resetCommand);
+      return temporaryPassword;
+    } catch (resetError) {
+      throw resetError;
+    }
   }
 }
 

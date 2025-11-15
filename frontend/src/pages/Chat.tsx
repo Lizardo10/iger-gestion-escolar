@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { api } from '../lib/api';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 interface Message {
   id: string;
@@ -85,9 +86,15 @@ export function Chat() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Chat con Asistente</h1>
         {messages.length > 0 && (
-          <button onClick={handleClear} className="btn btn-secondary text-sm">
+          <ThreeDButton
+            onClick={handleClear}
+            variant="secondary"
+            size="sm"
+            showOrb
+            orbColor={{ primary: '#94a3b8', accent: '#cbd5f5' }}
+          >
             🗑️ Limpiar Chat
-          </button>
+          </ThreeDButton>
         )}
       </div>
 
@@ -161,13 +168,15 @@ export function Chat() {
               disabled={loading}
               maxLength={1000}
             />
-            <button
+            <ThreeDButton
               type="submit"
-              className="btn btn-primary"
               disabled={loading || !input.trim()}
+              loading={loading}
+              showOrb
+              className="px-5"
             >
               {loading ? 'Enviando...' : 'Enviar'}
-            </button>
+            </ThreeDButton>
           </div>
           <p className="text-xs text-gray-500 mt-2 text-right">
             {input.length}/1000 caracteres

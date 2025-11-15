@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 import { AuthService } from '../lib/auth';
+import { ThreeDButton } from '../components/ui/ThreeDButton';
 
 export function Login() {
   const [email, setEmail] = useState('');
@@ -145,13 +146,16 @@ export function Login() {
               required
             />
           </div>
-          <button
+          <ThreeDButton
             type="submit"
-            className="btn btn-primary w-full"
+            loading={isLoading}
             disabled={isLoading}
+            showOrb
+            className="w-full justify-center"
+            orbColor={{ primary: '#2563eb', accent: '#38bdf8' }}
           >
             {isLoading ? 'Iniciando sesión...' : 'Iniciar Sesión'}
-          </button>
+          </ThreeDButton>
         </form>
 
         <div className="mt-4 text-center">

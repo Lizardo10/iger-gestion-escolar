@@ -15,6 +15,19 @@ Sistema completo de gestión escolar desarrollado para administrar estudiantes, 
 - **Facturación Automática**: Generación automática de facturas PDF y envío por correo
 - **Múltiples Roles**: Superadmin, Admin, Profesor y Estudiante con permisos diferenciados
 
+## 🔐 Credenciales de Demostración (Universidad)
+
+> ⚠️ Uso exclusivo para pruebas académicas. No utilices estas credenciales en producción ni las reutilices en servicios reales.
+
+| Rol           | Usuario / Correo                | Contraseña               | Comentarios                                      |
+| ------------- | -------------------------------- | ------------------------ | ------------------------------------------------ |
+| Superadmin    | `lizardoperezjimenez@gmail.com` | `MiNuevaPasswordSegura123!` | Acceso total para configurar el sistema           |
+| Administrador | `admin.demo@iger.edu`           | `AdminDemo123!`          | Gestiona profesores, clases y pagos               |
+| Profesor      | `profesor.demo@iger.edu`        | `TeacherDemo123!`        | Accede a “Mis Clases” y administra sus cursos     |
+| Estudiante    | `estudiante.demo@iger.edu`      | `StudentDemo123!`        | Consulta tareas, eventos y estado de pagos        |
+
+Cada cuenta obliga a cambiar la contraseña en el primer inicio de sesión (flujo protegido por Cognito).
+
 ## 🛠️ Tecnologías Utilizadas
 
 ### Frontend
@@ -111,6 +124,17 @@ FRONTEND_URL=https://dev.d2umdnu9x2m9qg.amplifyapp.com
 # DynamoDB (se crea automáticamente, pero puedes especificar el nombre)
 DYNAMODB_TABLE=IgerData
 ```
+
+### ✉️ Configuración de Correo (AWS SES)
+
+Para que los correos (facturas, credenciales de profesores, etc.) salgan correctamente debes:
+
+1. **Verificar el remitente** (`EMAIL_FROM`) en AWS SES. Si usas dominio propio, verifica el dominio completo o la casilla individual.
+2. Si tu cuenta SES sigue en **modo sandbox**, verifica también cada correo destinatario (por ejemplo, las cuentas demo anteriores) desde la consola de SES.
+3. Cuando estés listo para producción, solicita acceso “Production” en SES o usa un dominio ya aprobado.
+4. Revisa los logs de la función Lambda en CloudWatch (`resetTeacherPassword`, `paymentsVerifyPayment`) ante cualquier `MessageRejected` o `EmailAddressNotVerified`.
+
+Sin estos pasos SES rechazará el envío y verás mensajes de advertencia en los logs.
 
 ### 3. Desplegar Backend
 
