@@ -6,12 +6,12 @@ He configurado las credenciales directamente en `serverless.yml` como valores po
 
 ### Credenciales Configuradas:
 
-1. **PayPal Sandbox:**
-   - Client ID: `AVtfXKf2gDJ2SxQ57e4gZAAG9OK29bks29d6RiE_VFwh3F6Pp7i0FoUicoaG67GfQbQWgaCea5c_gJKH`
-   - Secret: `EN5JatASQxiC1GJLbjc66JwSQvcKEhCGKUsZWOlnSAEqnmP2Um8HrSHmLmj_VAkp2mr5zIa51vPJsr9f`
-   - Mode: `sandbox` (siempre)
+1. **PayPal Sandbox (demo):**
+   - Client ID: `PAYPAL_SANDBOX_CLIENT_ID_DEMO`
+   - Secret: `PAYPAL_SANDBOX_SECRET_DEMO`
+   - Mode: `sandbox`
 
-2. **OpenAI:**
+2. **OpenAI (demo):**
    - API Key: `sk-demo-XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX`
 
 ## 📝 Ubicación de las Credenciales
